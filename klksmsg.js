@@ -12,12 +12,12 @@ let connSeq = 0
 let rl
 
 //COMMUNICATION FUNCTIONS
+console.log('To broadcast a message to an user write with the following pattern (ADDRESS:MESSAGE).')
 const askUser = async () => {
   rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
   })
-  console.log('To broadcast a message to an user write with the following pattern (ADDRESS:MESSAGE).\r\n')
   rl.question('', message => {
     var split = message.split(':')
     if (fs.existsSync('users/'+split[0]+'.pem')) {
