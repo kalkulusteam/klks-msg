@@ -116,7 +116,9 @@ var decryptMessage = function(toDecrypt, keyPath) {
   console.log('Listening to port: ' + port)
 
   sw.join(process.env.SWARM_CHANNEL)
-
+  sw.on('peer', function(peer) { 
+    console.log(peer)
+  })
   sw.on('connection', (conn, info) => {
     const seq = connSeq
 
