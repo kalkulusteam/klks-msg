@@ -1,9 +1,9 @@
 const crypto = require('crypto')
 const Swarm = require('discovery-swarm')
-const defaults = require('dat-swarm-defaults')
 const getPort = require('get-port')
 const readline = require('readline')
 const sign = require('./crypto/sign.js')
+var portastic = require('portastic')
 require('dotenv').config()
 const fs = require('fs')
 
@@ -43,13 +43,15 @@ const broadCast = async (message) => {
 }
 
 const broadCastPubKey = async () => {
-  console.log('Broadcasting pubKey to peers...')
-  var publicKey = fs.readFileSync('keys/public.pem', "utf8");
-  var message = publicKey
-  sign.signWithKey(process.env.NODE_KEY, message).then(signature => {
-    signature.message = message
-    broadCast(JSON.stringify(signature))
-  })
+  if(sw.connected > 0){
+    console.log('Broadcasting pubKey to peers...')
+    var publicKey = fs.readFileSync('keys/public.pem', "utf8");
+    var message = publicKey
+    sign.signWithKey(process.env.NODE_KEY, message).then(signature => {
+      signature.message = message
+      broadCast(JSON.stringify(signature))
+    })
+  }
 }
 //COMMUNICATION FUNCTIONS
 
@@ -57,13 +59,11 @@ const broadCastPubKey = async () => {
 const NodeID = crypto.randomBytes(32)
 console.log('Your identity: ' + NodeID.toString('hex'))
 
-const config = defaults({
+const sw = Swarm({
   id: NodeID,
   utp: true,
   tcp: true
 })
-
-const sw = Swarm(config)
 //SWARM
 
 //ENCRYPTION
@@ -110,14 +110,19 @@ var decryptMessage = function(toDecrypt, keyPath) {
 
 ;(async () => {
 
-  const port = await getPort()
-
+  const ports = await portastic.find({
+    min: 8000,
+    max: 15000
+  })
+  var port = ports[0]
   sw.listen(port)
   console.log('Listening to port: ' + port)
 
   sw.join(process.env.SWARM_CHANNEL)
-  sw.on('peer', function(peer) { 
-    //console.log(peer)
+  sw.on('connect-failed', function(peer, details) { 
+    if(process.env.DEBUG === 'TRUE'){
+      console.log('CONNECTION ERROR', peer, details)
+    }
   })
   sw.on('connection', (conn, info) => {
     const seq = connSeq
