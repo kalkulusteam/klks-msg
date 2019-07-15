@@ -148,10 +148,10 @@ var decryptMessage = function(toDecrypt, keyPath) {
               var decrypted = decryptMessage(received.message, 'keys/private.pem')
               console.log("Successfully decrypted message: " + decrypted)
             }catch(e){
-              console.log('Checking for public key.')
               if(received.message.indexOf('-----BEGIN PUBLIC KEY-----') !== -1){
                 if (!fs.existsSync('users/'+ received.address +'.pem')) {
                   fs.writeFileSync('users/'+ received.address +'.pem', received.message)
+                  console.log('Received new public key.')
                 }
               }
             }
@@ -172,5 +172,10 @@ var decryptMessage = function(toDecrypt, keyPath) {
   
   askUser()
   generateKeys()
-
+  setInterval(
+    function (){
+      broadCastPubKey()
+    },
+    15000
+  )
 })()
