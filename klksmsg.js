@@ -70,16 +70,16 @@ const sw = Swarm({
 const generateKeys = () => {
   const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', 
   {
-          modulusLength: 4096,
-          namedCurve: 'secp256k1',
-          publicKeyEncoding: {
-              type: 'spki',
-              format: 'pem'     
-          },     
-          privateKeyEncoding: {
-              type: 'pkcs8',
-              format: 'pem'
-          } 
+    modulusLength: 4096,
+    namedCurve: 'secp256k1',
+    publicKeyEncoding: {
+        type: 'spki',
+        format: 'pem'     
+    },     
+    privateKeyEncoding: {
+        type: 'pkcs8',
+        format: 'pem'
+    } 
   });
 
   if (!fs.existsSync('keys/private.pem')) {
@@ -115,6 +115,7 @@ var decryptMessage = function(toDecrypt, keyPath) {
     max: 15000
   })
   var port = ports[0]
+  
   sw.listen(port)
   console.log('Listening to port: ' + port)
 
