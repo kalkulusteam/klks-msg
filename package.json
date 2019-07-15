@@ -1,14 +1,14 @@
 {
-  "name": "scrypta-p2p",
+  "name": "klks-msg",
   "version": "1.0.0",
-  "description": "Scrypta P2P IdANodes service",
-  "main": "index.js",
+  "description": "Kalkulus Message dApp",
+  "main": "klksmsg.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon klksmsg.js",
     "start": "node klksmsg.js"
   },
-  "author": "Scrypta Task Force",
+  "author": "Kalkulus Team",
   "license": "MIT",
   "dependencies": {
     "coinkey": "^3.0.0",
