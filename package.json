@@ -1,0 +1,26 @@
+{
+  "name": "scrypta-p2p",
+  "version": "1.0.0",
+  "description": "Scrypta P2P IdANodes service",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon klksmsg.js",
+    "start": "node klksmsg.js"
+  },
+  "author": "Scrypta Task Force",
+  "license": "MIT",
+  "dependencies": {
+    "coinkey": "^3.0.0",
+    "crypto-js": "^3.1.9-1",
+    "dat-swarm-defaults": "^1.0.2",
+    "discovery-swarm": "^6.0.0",
+    "dotenv": "^8.0.0",
+    "get-port": "^5.0.0",
+    "portfinder": "^1.0.20",
+    "secp256k1": "^3.7.1"
+  },
+  "devDependencies": {
+    "nodemon": "^1.19.1"
+  }
+}
