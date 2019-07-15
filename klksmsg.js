@@ -37,14 +37,14 @@ const askUser = async () => {
 //COMMUNICATION FUNCTIONS
 
 const broadCast = async (message) => {
-  console.log('Broadcasting message.')
+  //console.log('Broadcasting now...')
   for (let id in peers) {
     peers[id].conn.write(message)
   }
 }
 
 const broadCastPubKey = async () => {
-  console.log('Broadcasting pubKey to peers.')
+  console.log('Broadcasting pubKey to peers...')
   var publicKey = fs.readFileSync('keys/public.pem', "utf8");
   var message = publicKey
   sign.signWithKey(process.env.NODE_KEY, message).then(signature => {
@@ -108,7 +108,7 @@ var decryptMessage = function(toDecrypt, keyPath) {
 
 ;(async () => {
 
-  const port = await getPort()
+  const port = 43434
 
   sw.listen(port)
   console.log('Listening to port: ' + port)
