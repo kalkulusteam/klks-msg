@@ -108,7 +108,7 @@ var decryptMessage = function(toDecrypt, keyPath) {
 
 ;(async () => {
 
-  const port = 43434
+  const port = await getPort()
 
   sw.listen(port)
   console.log('Listening to port: ' + port)
