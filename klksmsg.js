@@ -17,8 +17,8 @@ const askUser = async () => {
     input: process.stdin,
     output: process.stdout
   })
-
-  rl.question('Write a message to broadcast including the receiving address (ADDRESS:MESSAGE).\r\n', message => {
+  console.log('To broadcast a message to an user write with the following pattern (ADDRESS:MESSAGE).\r\n')
+  rl.question('', message => {
     var split = message.split(':')
     if (fs.existsSync('users/'+split[0]+'.pem')) {
       let encrypted = encryptMessage(split[1], 'users/'+split[0]+'.pem')
@@ -34,7 +34,6 @@ const askUser = async () => {
     }
   });
 }
-//COMMUNICATION FUNCTIONS
 
 const broadCast = async (message) => {
   //console.log('Broadcasting now...')
@@ -52,6 +51,7 @@ const broadCastPubKey = async () => {
     broadCast(JSON.stringify(signature))
   })
 }
+//COMMUNICATION FUNCTIONS
 
 //SWARM
 const NodeID = crypto.randomBytes(32)
@@ -59,6 +59,8 @@ console.log('Your identity: ' + NodeID.toString('hex'))
 
 const config = defaults({
   id: NodeID,
+  utp: true,
+  tcp: true
 })
 
 const sw = Swarm(config)
