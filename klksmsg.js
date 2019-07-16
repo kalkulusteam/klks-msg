@@ -54,7 +54,7 @@ const broadCast = async (message) => {
 
 const broadCastPubKey = async () => {
   if(sw.connected > 0){
-    console.log('Broadcasting pubKey to peers...')
+    //console.log('Broadcasting pubKey to peers...')
     var publicKey = fs.readFileSync('keys/public.pem', "utf8");
     var message = publicKey
     sign.signWithKey(process.env.NODE_KEY, message).then(signature => {
@@ -67,7 +67,7 @@ const broadCastPubKey = async () => {
 
 //SWARM
 const NodeID = crypto.randomBytes(32)
-console.log('Your identity: ' + NodeID.toString('hex'))
+console.log('Your Swarm identity: /swarm/klksmsg/' + NodeID.toString('hex'))
 
 const sw = Swarm({
   id: NodeID,
@@ -159,7 +159,6 @@ var decryptMessage = function(toDecrypt, keyPath) {
         var received = JSON.parse(data.toString())
         sign.verifySign(received.pubKey, received.signature, received.message).then(signature => {
           if(signature === true){
-            console.log(received.address + ' broadcasted a message: ' + received.message)
             try{
               var decrypted = decryptMessage(received.message, 'keys/private.pem')
               console.log("Successfully decrypted message: " + decrypted)
@@ -169,6 +168,8 @@ var decryptMessage = function(toDecrypt, keyPath) {
                   fs.writeFileSync('users/'+ received.address +'.pem', received.message)
                   console.log('Received new public key.')
                 }
+              }else{
+                console.log(received.address + ' broadcasted a message: ' + received.message)
               }
             }
           }
