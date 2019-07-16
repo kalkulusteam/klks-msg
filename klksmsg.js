@@ -11,13 +11,14 @@ let connSeq = 0
 let rl
 
 //COMMUNICATION FUNCTIONS
-console.log('To broadcast a message to an user write with the following pattern (ADDRESS:MESSAGE).')
+console.log('To broadcast a message to an user write with the following pattern (ADDRESS:MESSAGE) or send unencrypted message to every peer.')
+
 const askUser = async () => {
   rl = readline.createInterface({
     input: process.stdin,
-    output: process.stdout
+    output: null
   })
-  rl.question('', message => {
+  rl.on('line', message => {
     var split = message.split(':')
     if(split[1] !== undefined){
       if (fs.existsSync('users/'+split[0]+'.pem')) {
@@ -25,15 +26,15 @@ const askUser = async () => {
         sign.signWithKey(process.env.NODE_KEY, encrypted).then(signature => {
           signature.message = encrypted
           broadCast(JSON.stringify(signature))
-          rl = undefined
           rl.close()
+          rl = undefined
           askUser()
         })
       }else{
         console.log('CAN\'T FIND ' + split[0] + ' PUBKEY!')
       }
     }else{
-      console.log('Sending unencrypted message: ' + message)
+      //console.log('Sending unencrypted message: ' + message)
       sign.signWithKey(process.env.NODE_KEY, message).then(signature => {
         signature.message = message
         broadCast(JSON.stringify(signature))
@@ -180,7 +181,9 @@ var decryptMessage = function(toDecrypt, keyPath) {
                   console.log('Received new public key.')
                 }
               }else{
-                console.log(received.address + ' broadcasted a message: ' + received.message)
+                var d = new Date()
+                var n = d.toLocaleString()
+                console.log('\x1b[32m%s\x1b[0m \x1b[36m%s\x1b[0m', '['+ n +']',received.address + ':', received.message)
               }
             }
             if(process.env.RELAY === 'true'){
@@ -189,7 +192,9 @@ var decryptMessage = function(toDecrypt, keyPath) {
           }
         })
       }catch(e){
-        console.log('Received unsigned data, ignoring.')
+        if(process.env.DEBUG === 'true'){
+          console.log('Received unsigned data, ignoring.')
+        }
       }
     })
 
