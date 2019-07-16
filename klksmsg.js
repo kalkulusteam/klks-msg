@@ -5,10 +5,12 @@ const readline = require('readline')
 const sign = require('./crypto/sign.js')
 require('dotenv').config()
 const fs = require('fs')
+require('events').EventEmitter.defaultMaxListeners = 150;
 
 const peers = {}
 let connSeq = 0
 let rl
+var messages = []
 
 //COMMUNICATION FUNCTIONS
 console.log('To broadcast a message to an user write with the following pattern (ADDRESS:MESSAGE) or send unencrypted message to every peer.')
@@ -18,25 +20,31 @@ const askUser = async () => {
     output: null
   });
   rl.on('line', message => {
-    var split = message.split(':')
-    if(split[1] !== undefined){
-      if (fs.existsSync('users/'+split[0]+'.pem')) {
-        let encrypted = encryptMessage(split[1], 'users/'+split[0]+'.pem')
-        sign.signWithKey(process.env.NODE_KEY, encrypted).then(signature => {
-          signature.message = encrypted
+    if(message.length > 0){
+      var split = message.split(':')
+      if(split[1] !== undefined){
+        if (fs.existsSync('users/'+split[0]+'.pem')) {
+          let encrypted = encryptMessage(split[1], 'users/'+split[0]+'.pem')
+          sign.signWithKey(process.env.NODE_KEY, encrypted).then(signature => {
+            signature.message = encrypted
+            broadCast(JSON.stringify(signature))
+            rl.close()
+            rl = undefined
+            askUser()
+          })
+        }else{
+          console.log('CAN\'T FIND ' + split[0] + ' PUBKEY!')
+        }
+      }else{
+        //console.log('Sending unencrypted message: ' + message)
+        sign.signWithKey(process.env.NODE_KEY, message).then(signature => {
+          signature.message = message
           broadCast(JSON.stringify(signature))
+          rl.close()
+          rl = undefined
           askUser()
         })
-      }else{
-        console.log('CAN\'T FIND ' + split[0] + ' PUBKEY!')
       }
-    }else{
-      //console.log('Sending unencrypted message: ' + message)
-      sign.signWithKey(process.env.NODE_KEY, message).then(signature => {
-        signature.message = message
-        broadCast(JSON.stringify(signature))
-        askUser()
-      })
     }
   })
 }
@@ -167,7 +175,9 @@ var decryptMessage = function(toDecrypt, keyPath) {
           if(signature === true){
             try{
               var decrypted = decryptMessage(received.message, 'keys/private.pem')
-              console.log("Successfully decrypted message: " + decrypted)
+              var d = new Date()
+              var n = d.toLocaleString()
+              console.log('\x1b[32m%s\x1b[0m \x1b[36m%s\x1b[0m', '['+ n +'] [SAFU]',received.address + ':', decrypted)
             }catch(e){
               if(received.message.indexOf('-----BEGIN PUBLIC KEY-----') !== -1){
                 if (!fs.existsSync('users/'+ received.address +'.pem')) {
@@ -177,7 +187,10 @@ var decryptMessage = function(toDecrypt, keyPath) {
               }else{
                 var d = new Date()
                 var n = d.toLocaleString()
-                console.log('\x1b[32m%s\x1b[0m \x1b[36m%s\x1b[0m', '['+ n +']',received.address + ':', received.message)
+                if(messages.indexOf(received.signature) === -1){
+                  messages.push(received.signature)
+                  console.log('\x1b[32m%s\x1b[0m \x1b[36m%s\x1b[0m', '['+ n +']',received.address + ':', received.message)
+                }
               }
             }
             if(process.env.RELAY === 'true'){
@@ -203,8 +216,9 @@ var decryptMessage = function(toDecrypt, keyPath) {
   generateKeys()
   setInterval(
     function (){
-      broadCastPubKey()
       sw.join(process.env.SWARM_CHANNEL)
+      broadCastPubKey()
+      messages = []
     },
     15000
   )
