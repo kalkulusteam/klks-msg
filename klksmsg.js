@@ -130,6 +130,7 @@ var decryptMessage = function(toDecrypt, keyPath) {
       console.log('CONNECTION ERROR', peer, details)
     }
   })
+
   sw.on('connection', (conn, info) => {
     const seq = connSeq
 
@@ -158,7 +159,7 @@ var decryptMessage = function(toDecrypt, keyPath) {
         var received = JSON.parse(data.toString())
         sign.verifySign(received.pubKey, received.signature, received.message).then(signature => {
           if(signature === true){
-            console.log(received.address + ' broadcasted a message.')
+            console.log(received.address + ' broadcasted a message: ' + received.message)
             try{
               var decrypted = decryptMessage(received.message, 'keys/private.pem')
               console.log("Successfully decrypted message: " + decrypted)
