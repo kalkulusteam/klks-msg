@@ -27,6 +27,7 @@ const askUser = async () => {
           let encrypted = encryptMessage(split[1], 'users/'+split[0]+'.pem')
           sign.signWithKey(process.env.NODE_KEY, encrypted).then(signature => {
             signature.message = encrypted
+            messages.push(signature.signature)
             broadCast(JSON.stringify(signature))
             rl.close()
             rl = undefined
@@ -39,6 +40,7 @@ const askUser = async () => {
         //console.log('Sending unencrypted message: ' + message)
         sign.signWithKey(process.env.NODE_KEY, message).then(signature => {
           signature.message = message
+          messages.push(signature.signature)
           broadCast(JSON.stringify(signature))
           rl.close()
           rl = undefined
