@@ -25,8 +25,8 @@ const askUser = async () => {
         sign.signWithKey(process.env.NODE_KEY, encrypted).then(signature => {
           signature.message = encrypted
           broadCast(JSON.stringify(signature))
-          rl.close()
           rl = undefined
+          rl.close()
           askUser()
         })
       }else{
@@ -125,17 +125,28 @@ var decryptMessage = function(toDecrypt, keyPath) {
   console.log('Listening to port: ' + port)
 
   sw.join(process.env.SWARM_CHANNEL)
+  setInterval(function(){
+    sw.join(process.env.SWARM_CHANNEL)
+  },5000)
   sw.on('connect-failed', function(peer, details) { 
     if(process.env.DEBUG === 'TRUE'){
       console.log('CONNECTION ERROR', peer, details)
     }
   })
-
+  sw.on('peer', function(peer) { 
+    if(process.env.DEBUG === 'TRUE'){
+      console.log(peer)
+    }
+  })
+  sw.on('handshaking', function(connection, info) { 
+    if(process.env.DEBUG === 'TRUE'){
+      console.log(connection, info)
+    }
+  })
   sw.on('connection', (conn, info) => {
     const seq = connSeq
 
     const peerId = info.id.toString('hex')
-
     if (!peers[peerId]) {
       console.log(`Connected #${seq} to peer: ${peerId}`)
       peers[peerId] = {}
@@ -171,6 +182,9 @@ var decryptMessage = function(toDecrypt, keyPath) {
               }else{
                 console.log(received.address + ' broadcasted a message: ' + received.message)
               }
+            }
+            if(process.env.RELAY === 'true'){
+              broadCast(data.toString())
             }
           }
         })
