@@ -177,7 +177,10 @@ var decryptMessage = function(toDecrypt, keyPath) {
               var decrypted = decryptMessage(received.message, 'keys/private.pem')
               var d = new Date()
               var n = d.toLocaleString()
-              console.log('\x1b[32m%s\x1b[0m \x1b[36m%s\x1b[0m', '['+ n +'] [SAFU]',received.address + ':', decrypted)
+              if(messages.indexOf(received.signature) === -1){
+                messages.push(received.signature)
+                console.log('\x1b[32m%s\x1b[0m \x1b[36m%s\x1b[0m', '['+ n +'] [SAFU]',received.address + ':', decrypted)
+              }
             }catch(e){
               if(received.message.indexOf('-----BEGIN PUBLIC KEY-----') !== -1){
                 if (!fs.existsSync('users/'+ received.address +'.pem')) {
