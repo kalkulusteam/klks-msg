@@ -3,7 +3,6 @@ const Swarm = require('discovery-swarm')
 const getPort = require('get-port')
 const readline = require('readline')
 const sign = require('./crypto/sign.js')
-var portastic = require('portastic')
 require('dotenv').config()
 const fs = require('fs')
 
@@ -20,17 +19,28 @@ const askUser = async () => {
   })
   rl.question('', message => {
     var split = message.split(':')
-    if (fs.existsSync('users/'+split[0]+'.pem')) {
-      let encrypted = encryptMessage(split[1], 'users/'+split[0]+'.pem')
-      sign.signWithKey(process.env.NODE_KEY, encrypted).then(signature => {
-        signature.message = encrypted
+    if(split[1] !== undefined){
+      if (fs.existsSync('users/'+split[0]+'.pem')) {
+        let encrypted = encryptMessage(split[1], 'users/'+split[0]+'.pem')
+        sign.signWithKey(process.env.NODE_KEY, encrypted).then(signature => {
+          signature.message = encrypted
+          broadCast(JSON.stringify(signature))
+          rl.close()
+          rl = undefined
+          askUser()
+        })
+      }else{
+        console.log('CAN\'T FIND ' + split[0] + ' PUBKEY!')
+      }
+    }else{
+      console.log('Sending unencrypted message: ' + message)
+      sign.signWithKey(process.env.NODE_KEY, message).then(signature => {
+        signature.message = message
         broadCast(JSON.stringify(signature))
         rl.close()
         rl = undefined
         askUser()
       })
-    }else{
-      console.log('CAN\'T FIND ' + split[0] + ' PUBKEY!')
     }
   });
 }
@@ -110,12 +120,7 @@ var decryptMessage = function(toDecrypt, keyPath) {
 
 ;(async () => {
 
-  const ports = await portastic.find({
-    min: 8000,
-    max: 15000
-  })
-  var port = ports[0]
-  
+  const port = await getPort()
   sw.listen(port)
   console.log('Listening to port: ' + port)
 
