@@ -12,12 +12,11 @@ let rl
 
 //COMMUNICATION FUNCTIONS
 console.log('To broadcast a message to an user write with the following pattern (ADDRESS:MESSAGE) or send unencrypted message to every peer.')
-
 const askUser = async () => {
   rl = readline.createInterface({
     input: process.stdin,
     output: null
-  })
+  });
   rl.on('line', message => {
     var split = message.split(':')
     if(split[1] !== undefined){
@@ -26,8 +25,6 @@ const askUser = async () => {
         sign.signWithKey(process.env.NODE_KEY, encrypted).then(signature => {
           signature.message = encrypted
           broadCast(JSON.stringify(signature))
-          rl.close()
-          rl = undefined
           askUser()
         })
       }else{
@@ -38,18 +35,18 @@ const askUser = async () => {
       sign.signWithKey(process.env.NODE_KEY, message).then(signature => {
         signature.message = message
         broadCast(JSON.stringify(signature))
-        rl.close()
-        rl = undefined
         askUser()
       })
     }
-  });
+  })
 }
 
 const broadCast = async (message) => {
   //console.log('Broadcasting now...')
-  for (let id in peers) {
-    peers[id].conn.write(message)
+  if(sw.connected > 0){
+    for (let id in peers) {
+      peers[id].conn.write(message)
+    }
   }
 }
 
@@ -126,9 +123,6 @@ var decryptMessage = function(toDecrypt, keyPath) {
   console.log('Listening to port: ' + port)
 
   sw.join(process.env.SWARM_CHANNEL)
-  setInterval(function(){
-    sw.join(process.env.SWARM_CHANNEL)
-  },5000)
   sw.on('connect-failed', function(peer, details) { 
     if(process.env.DEBUG === 'TRUE'){
       console.log('CONNECTION ERROR', peer, details)
@@ -206,12 +200,20 @@ var decryptMessage = function(toDecrypt, keyPath) {
 
   })
   
-  askUser()
   generateKeys()
   setInterval(
     function (){
       broadCastPubKey()
+      sw.join(process.env.SWARM_CHANNEL)
     },
     15000
   )
+  console.log('Bootstraping connections, the interface will be ready soon...')
+  var connectionReady = setInterval(function(){
+    if(sw.connected > 0){
+      console.log('Interface ready, write a message when you\'re ready.')
+      clearInterval(connectionReady)
+      askUser()
+    }
+  },5000)
 })()
