@@ -11,7 +11,7 @@ class Main {
         Main.mainWindow = null;
     }
     static onReady() {
-        Main.mainWindow = new Main.BrowserWindow({ width: 1200, height: 700 });
+        Main.mainWindow = new Main.BrowserWindow({ width: 1200, height: 700, icon: './static/assets/img/favicon.png' });
         Main.mainWindow.loadFile('./static/index.html');
         Main.mainWindow.on('closed', Main.onClose);
     }
