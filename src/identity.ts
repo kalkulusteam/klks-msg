@@ -1,6 +1,7 @@
 var CoinKey = require('coinkey')
 const CryptoJS = require('crypto-js')
 const secp256k1 = require('secp256k1')
+const PouchDB = require('pouchdb')
 
 const klksInfo = {
     private: 0xae,
@@ -8,7 +9,21 @@ const klksInfo = {
     scripthash: 0x0d
 };
 
-export default class Api {
+var db = new PouchDB('settings');
+
+export default class Identity {
+    static async load() {
+        let dbcheck = await db.allDocs()
+        let identity
+        if(dbcheck.rows.length === 0){
+            identity = await Identity.create()
+            await db.post(identity)
+        }else{
+            let entry = dbcheck.rows[0]
+            identity = await db.get(entry.id)
+        }
+        console.log('Identity loaded: ' + identity.pub)
+    }
     static async create() {
         return new Promise(response => {
             var ck = new CoinKey.createRandom(klksInfo)

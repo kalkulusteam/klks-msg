@@ -19,12 +19,12 @@ const fs = require('fs');
 const config = require('./config.json');
 require('events').EventEmitter.defaultMaxListeners = 150;
 var argv = require('minimist')(process.argv.slice(2));
-if (argv.server === undefined) {
+if (argv.server === undefined || config.SERVER_MODE === false) {
     console.log('Starting interface');
     main_1.default.main(electron_1.app, electron_1.BrowserWindow);
 }
 api_1.default.init();
-identity_1.default.create();
+identity_1.default.load();
 const peers = {};
 let connSeq = 0;
 let messages = [];

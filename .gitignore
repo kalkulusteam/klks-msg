@@ -1,6 +1,8 @@
 !node_modules/eckey/
+!node_modules/bs58/
 node_modules/
 keys/
 users/
 .env
 build/
+settings/

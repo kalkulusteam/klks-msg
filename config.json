@@ -1,3 +1,4 @@
 {
-    "SWARM_CHANNEL": "KLKSMSG"
+    "SWARM_CHANNEL": "KLKSMSG",
+    "SERVER_MODE": false
 }

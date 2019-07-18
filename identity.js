@@ -11,12 +11,29 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var CoinKey = require('coinkey');
 const CryptoJS = require('crypto-js');
 const secp256k1 = require('secp256k1');
+const PouchDB = require('pouchdb');
 const klksInfo = {
     private: 0xae,
     public: 0x2e,
     scripthash: 0x0d
 };
-class Api {
+var db = new PouchDB('settings');
+class Identity {
+    static load() {
+        return __awaiter(this, void 0, void 0, function* () {
+            let dbcheck = yield db.allDocs();
+            let identity;
+            if (dbcheck.rows.length === 0) {
+                identity = yield Identity.create();
+                yield db.post(identity);
+            }
+            else {
+                let entry = dbcheck.rows[0];
+                identity = yield db.get(entry.id);
+            }
+            console.log('Identity loaded: ' + identity.pub);
+        });
+    }
     static create() {
         return __awaiter(this, void 0, void 0, function* () {
             return new Promise(response => {
@@ -74,5 +91,5 @@ class Api {
         });
     }
 }
-exports.default = Api;
+exports.default = Identity;
 //# sourceMappingURL=identity.js.map

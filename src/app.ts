@@ -11,13 +11,13 @@ const config = require('./config.json')
 require('events').EventEmitter.defaultMaxListeners = 150;
 var argv = require('minimist')(process.argv.slice(2))
 
-if(argv.server === undefined){
+if(argv.server === undefined || config.SERVER_MODE === false){
     console.log('Starting interface')
     Main.main(app, BrowserWindow);
 }
 
 Api.init()
-Identity.create()
+Identity.load()
 
 const peers = {}
 let connSeq = 0
