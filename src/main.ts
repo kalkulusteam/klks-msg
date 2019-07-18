@@ -16,7 +16,7 @@ export default class Main {
     }
 
     private static onReady() {
-        Main.mainWindow = new Main.BrowserWindow({ width: 800, height: 600 });
+        Main.mainWindow = new Main.BrowserWindow({ width: 1024, height: 600 });
         Main.mainWindow.loadFile('./static/index.html');
         Main.mainWindow.on('closed', Main.onClose);
     }

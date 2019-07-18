@@ -2,8 +2,8 @@ const express = require('express')
 const api = express()
 const Identicon = require('identicon.js')
 const fs = require('fs')
-const sign = require('./libs/sign.js')
 const config = require('./config.json')
+import Identity from './identity';
 
 var messages = []
 var relayed = []
@@ -42,12 +42,12 @@ export default class Api {
                     })
                 }
                 }else{
-                sign.signWithKey(config.NODE_KEY, message).then(signature => {
-                    signature.message = message
-                    /*messages.push(signature.signature)
-                    broadCast(JSON.stringify(signature))
-                    res.send(signature)*/
-                })
+                    Identity.signWithKey(config.NODE_KEY, message).then(signature => {
+                        signature['message'] = message
+                        /*messages.push(signature.signature)
+                        broadCast(JSON.stringify(signature))
+                        res.send(signature)*/
+                    })
                 }
             }else{
                 res.send({

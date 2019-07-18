@@ -2,6 +2,7 @@ import { app, BrowserWindow } from 'electron';
 import Main from './main';
 import Api from './api';
 import Identity from './identity';
+
 const crypto = require('crypto')
 const Swarm = require('discovery-swarm')
 const getPort = require('get-port')

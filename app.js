@@ -12,7 +12,6 @@ const electron_1 = require("electron");
 const main_1 = require("./main");
 const api_1 = require("./api");
 const identity_1 = require("./identity");
-const sign = require('./libs/sign.js');
 const crypto = require('crypto');
 const Swarm = require('discovery-swarm');
 const getPort = require('get-port');
@@ -43,8 +42,8 @@ const broadCastPubKey = () => __awaiter(this, void 0, void 0, function* () {
         //console.log('Broadcasting pubKey to peers...')
         var publicKey = fs.readFileSync('keys/public.pem', "utf8");
         var message = publicKey;
-        sign.signWithKey(config.NODE_KEY, message).then(signature => {
-            signature.message = message;
+        identity_1.default.signWithKey(config.NODE_KEY, message).then(signature => {
+            signature['message'] = message;
             broadCast(JSON.stringify(signature));
         });
     }
@@ -127,7 +126,7 @@ function initEngine() {
             conn.on('data', data => {
                 try {
                     var received = JSON.parse(data.toString());
-                    sign.verifySign(received.pubKey, received.signature, received.message).then(signature => {
+                    identity_1.default.verifySign(received.pubKey, received.signature, received.message).then(signature => {
                         if (signature === true) {
                             try {
                                 var decrypted = decryptMessage(received.message, 'keys/private.pem');
