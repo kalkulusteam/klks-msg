@@ -17,11 +17,9 @@ module.exports = {
             let privKey = ck.privateKey
             const sigObj = secp256k1.sign(msg, privKey)
             const pubKey = secp256k1.publicKeyCreate(privKey)
-
             response({
                 signature: sigObj.signature.toString('hex'),
-                pubKey: pubKey.toString('hex'),
-                address: ck.publicAddress
+                pubKey: pubKey.toString('hex')
             })
         })
     },

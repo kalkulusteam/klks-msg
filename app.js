@@ -1,54 +1,110 @@
+const { app, BrowserWindow } = require('electron')
+var childProcess = require('child_process');
+var utilities = require('./libs/utilities.js');
+const express = require('express')
+const Identicon = require('identicon.js')
+const api = express()
 const crypto = require('crypto')
 const Swarm = require('discovery-swarm')
 const getPort = require('get-port')
-const readline = require('readline')
-const sign = require('./crypto/sign.js')
+const sign = require('./libs/sign.js')
 require('dotenv').config()
 const fs = require('fs')
 require('events').EventEmitter.defaultMaxListeners = 150;
+var argv = require('minimist')(process.argv.slice(2))
 
 const peers = {}
 let connSeq = 0
 let rl
 var messages = []
+var relayed = []
 
-//COMMUNICATION FUNCTIONS
-console.log('To broadcast a message to an user write with the following pattern (ADDRESS:MESSAGE) or send unencrypted message to every peer.')
-const askUser = async () => {
-  rl = readline.createInterface({
-    input: process.stdin,
-    output: null
-  });
-  rl.on('line', message => {
-    if(message.length > 0){
-      var split = message.split(':')
-      if(split[1] !== undefined){
-        if (fs.existsSync('users/'+split[0]+'.pem')) {
-          let encrypted = encryptMessage(split[1], 'users/'+split[0]+'.pem')
-          sign.signWithKey(process.env.NODE_KEY, encrypted).then(signature => {
-            signature.message = encrypted
+async function initMessenger(){
+  var frontendPort = await utilities.freeport();
+  api.get('/avatar/:hash', (req, res) => {
+    var data = new Identicon(req.params.hash, 420).toString();
+    var img = new Buffer(data, 'base64');
+    res.writeHead(200, {
+      'Content-Type': 'image/png',
+      'Content-Length': img.length
+    });
+    res.end(img); 
+  })
+
+  api.get('/connections', (req, res) => res.send(sw.connected))
+  api.post('/send-message', (req,res) => {
+    var body = req.body
+    if(body.message !== undefined && body.receiver !== undefined){
+      var message = body.message
+      var receiver = body.receiver
+        if(receiver !== 'public'){
+          if (fs.existsSync('users/'+receiver+'.pem')) {
+            let encrypted = encryptMessage(split[1], 'users/'+receiver+'.pem')
+            sign.signWithKey(process.env.NODE_KEY, encrypted).then(signature => {
+              signature.message = encrypted
+              messages.push(signature.signature)
+              broadCast(JSON.stringify(signature))
+            })
+          }else{
+            res.send({
+              error: true,
+              message: 'CAN\'T FIND ' + receiver + ' PUBKEY!'
+            })
+          }
+        }else{
+          sign.signWithKey(process.env.NODE_KEY, message).then(signature => {
+            signature.message = message
             messages.push(signature.signature)
             broadCast(JSON.stringify(signature))
-            rl.close()
-            rl = undefined
-            askUser()
+            res.send(signature)
           })
-        }else{
-          console.log('CAN\'T FIND ' + split[0] + ' PUBKEY!')
         }
-      }else{
-        //console.log('Sending unencrypted message: ' + message)
-        sign.signWithKey(process.env.NODE_KEY, message).then(signature => {
-          signature.message = message
-          messages.push(signature.signature)
-          broadCast(JSON.stringify(signature))
-          rl.close()
-          rl = undefined
-          askUser()
-        })
-      }
+    }else{
+      res.send({
+        error: true,
+        message: 'Specify message and receiver'
+      })
     }
   })
+  
+  api.listen(frontendPort, () => console.log(`Engine listening on port ${frontendPort}!`))
+}
+//INIT MESSENGER FUNCTIONS
+initMessenger()
+
+function renderWindow () {
+  let win = new BrowserWindow({
+    width: 1024,
+    height: 550,
+    webPreferences: {
+      nodeIntegration: true
+    },
+    icon: 'assets/img/favicon.png'
+  })
+  win.maximize()
+  win.loadFile('index.html')
+}
+
+function initInterface(){
+  app.on('ready', renderWindow)
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') {
+      app.quit()
+    }
+  })
+  app.on('before-quit', () =>{
+    console.log('Quitting messenger.')
+  })
+  app.on('activate', () => {
+    if (win === null) {
+      renderWindow()
+    }
+  })
+}
+
+//INIT INTERFACE
+if(argv.server === undefined){
+  initInterface()
 }
 
 const broadCast = async (message) => {
@@ -126,34 +182,26 @@ var decryptMessage = function(toDecrypt, keyPath) {
 }
 //ENCRYPTION
 
-;(async () => {
+async function initEngine(){
 
   const port = await getPort()
   sw.listen(port)
   console.log('Listening to port: ' + port)
+  const swarmchannel = process.env.SWARM_CHANNEL
+  sw.join(swarmchannel)
 
-  sw.join(process.env.SWARM_CHANNEL)
   sw.on('connect-failed', function(peer, details) { 
     if(process.env.DEBUG === 'TRUE'){
       console.log('CONNECTION ERROR', peer, details)
     }
   })
-  sw.on('peer', function(peer) { 
-    if(process.env.DEBUG === 'TRUE'){
-      console.log(peer)
-    }
-  })
-  sw.on('handshaking', function(connection, info) { 
-    if(process.env.DEBUG === 'TRUE'){
-      console.log(connection, info)
-    }
-  })
+  
   sw.on('connection', (conn, info) => {
     const seq = connSeq
 
     const peerId = info.id.toString('hex')
     if (!peers[peerId]) {
-      console.log(`Connected #${seq} to peer: ${peerId}`)
+      console.log(`Connected to peer: /swarm/klksmsg/${peerId}`)
       peers[peerId] = {}
       broadCastPubKey()
     }
@@ -166,7 +214,9 @@ var decryptMessage = function(toDecrypt, keyPath) {
       try {
         conn.setKeepAlive(true, 600)
       } catch (exception) {
-        console.log('exception', exception)
+        setTimeout(function(){
+          conn.setKeepAlive(true, 600)
+        }, 10000)
       }
     }
 
@@ -221,7 +271,7 @@ var decryptMessage = function(toDecrypt, keyPath) {
   generateKeys()
   setInterval(
     function (){
-      sw.join(process.env.SWARM_CHANNEL)
+      sw.join(swarmchannel)
       broadCastPubKey()
       messages = []
     },
@@ -230,9 +280,11 @@ var decryptMessage = function(toDecrypt, keyPath) {
   console.log('Bootstraping connections, the interface will be ready soon...')
   var connectionReady = setInterval(function(){
     if(sw.connected > 0){
-      console.log('Interface ready, write a message when you\'re ready.')
+      console.log('Interface ready, now you can start messaging.')
       clearInterval(connectionReady)
-      askUser()
     }
   },5000)
-})()
+}
+
+//INIT MESSENGER ENGINE
+initEngine()
