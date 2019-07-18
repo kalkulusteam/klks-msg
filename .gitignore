@@ -1,6 +1,6 @@
 !node_modules/eckey/
 node_modules/
-keys/*.pem
-users/*.pem
+keys/
+users/
 .env
-build/*/
+build/

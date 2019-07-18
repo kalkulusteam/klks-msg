@@ -1,8 +1,8 @@
 const getPort = require('get-port')
 const isPortAvailable = require('is-port-available')
 
-module.exports = {
-    freeport: async function(){
+export default class Utilities {
+    static async freeport(){
         return new Promise(async response => {
             let port
             if(process.env.EXPRESS_PORT !== undefined){
@@ -18,4 +18,4 @@ module.exports = {
             response(port)
         })
     }
-};
+}
