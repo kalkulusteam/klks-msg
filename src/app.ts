@@ -20,19 +20,10 @@ if(argv.server === undefined){
 
 Api.init()
 
-const peers = {}
+global['peers'] = {}
 let connSeq = 0
 let messages = []
 let relayed = []
-
-const broadCast = async (message) => {
-  //console.log('Broadcasting now...')
-  if(sw.connected > 0){
-    for (let id in peers) {
-      peers[id].conn.write(message)
-    }
-  }
-}
   
 const broadCastPubKey = async () => {
   if(sw.connected > 0){
@@ -42,7 +33,7 @@ const broadCastPubKey = async () => {
     var message = publicKey
     Identity.signWithKey(identity['wallet']['prv'], message).then(signature => {
       signature['message'] = message
-      broadCast(JSON.stringify(signature))
+      Messages.broadcast(JSON.stringify(signature))
     })
   }
 }
@@ -78,14 +69,14 @@ async function initEngine(){
     const seq = connSeq
 
     const peerId = info.id.toString('hex')
-    if (!peers[peerId]) {
+    if (!global['peers'][peerId]) {
       console.log(`Connected to peer: /swarm/klksmsg/${peerId}`)
-      peers[peerId] = {}
+      global['peers'][peerId] = {}
       broadCastPubKey()
     }
 
-    peers[peerId].conn = conn
-    peers[peerId].seq = seq
+    global['peers'][peerId].conn = conn
+    global['peers'][peerId].seq = seq
     connSeq++
 
     if (info.initiator) {
@@ -130,8 +121,8 @@ async function initEngine(){
     })
 
     conn.on('close', () => {
-      if (peers[peerId].seq === seq) {
-        delete peers[peerId]
+      if (global['peers'][peerId].seq === seq) {
+        delete global['peers'][peerId]
       }
     })
 

@@ -31,8 +31,12 @@ export default class Messages {
         })
     }
 
-    static async broadcast(received) {
-        console.log('Broadcast to network..')
-        
+    static async broadcast(message) {
+        console.log('Broadcasting to network..')
+        for (let id in global['peers']) {
+            global['peers'][id].conn.write(message)
+        }
+        console.log('Broadcast end.')
     }
+    
 }

@@ -40,9 +40,13 @@ class Messages {
             }));
         });
     }
-    static broadcast(received) {
+    static broadcast(message) {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log('Broadcast to network..');
+            console.log('Broadcasting to network..');
+            for (let id in global['peers']) {
+                global['peers'][id].conn.write(message);
+            }
+            console.log('Broadcast end.');
         });
     }
 }

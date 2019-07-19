@@ -26,18 +26,10 @@ if (argv.server === undefined) {
     main_1.default.main(electron_1.app, electron_1.BrowserWindow);
 }
 api_1.default.init();
-const peers = {};
+global['peers'] = {};
 let connSeq = 0;
 let messages = [];
 let relayed = [];
-const broadCast = (message) => __awaiter(this, void 0, void 0, function* () {
-    //console.log('Broadcasting now...')
-    if (sw.connected > 0) {
-        for (let id in peers) {
-            peers[id].conn.write(message);
-        }
-    }
-});
 const broadCastPubKey = () => __awaiter(this, void 0, void 0, function* () {
     if (sw.connected > 0) {
         console.log('Broadcasting RSA public key to peers...');
@@ -46,7 +38,7 @@ const broadCastPubKey = () => __awaiter(this, void 0, void 0, function* () {
         var message = publicKey;
         identity_1.default.signWithKey(identity['wallet']['prv'], message).then(signature => {
             signature['message'] = message;
-            broadCast(JSON.stringify(signature));
+            messages_1.default.broadcast(JSON.stringify(signature));
         });
     }
 });
@@ -75,13 +67,13 @@ function initEngine() {
         sw.on('connection', (conn, info) => {
             const seq = connSeq;
             const peerId = info.id.toString('hex');
-            if (!peers[peerId]) {
+            if (!global['peers'][peerId]) {
                 console.log(`Connected to peer: /swarm/klksmsg/${peerId}`);
-                peers[peerId] = {};
+                global['peers'][peerId] = {};
                 broadCastPubKey();
             }
-            peers[peerId].conn = conn;
-            peers[peerId].seq = seq;
+            global['peers'][peerId].conn = conn;
+            global['peers'][peerId].seq = seq;
             connSeq++;
             if (info.initiator) {
                 try {
@@ -127,8 +119,8 @@ function initEngine() {
                 }
             }));
             conn.on('close', () => {
-                if (peers[peerId].seq === seq) {
-                    delete peers[peerId];
+                if (global['peers'][peerId].seq === seq) {
+                    delete global['peers'][peerId];
                 }
             });
         });
