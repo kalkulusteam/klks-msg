@@ -25,19 +25,6 @@ let connSeq = 0
 let messages = []
 let relayed = []
   
-const broadCastPubKey = async () => {
-  if(sw.connected > 0){
-    console.log('Broadcasting RSA public key to peers...')
-    let identity = await Identity.load()
-    var publicKey = identity['rsa']['pub']
-    var message = publicKey
-    Identity.signWithKey(identity['wallet']['prv'], message).then(signature => {
-      signature['message'] = message
-      Messages.broadcast(JSON.stringify(signature))
-    })
-  }
-}
-
 const NodeID = crypto.randomBytes(32)
 console.log('Your Swarm identity: /swarm/klksmsg/' + NodeID.toString('hex'))
 
@@ -72,7 +59,7 @@ async function initEngine(){
     if (!global['peers'][peerId]) {
       console.log(`Connected to peer: /swarm/klksmsg/${peerId}`)
       global['peers'][peerId] = {}
-      broadCastPubKey()
+      Messages.broadcastPubKey()
     }
 
     global['peers'][peerId].conn = conn
@@ -131,7 +118,7 @@ async function initEngine(){
   setInterval(
     function (){
       sw.join(swarmchannel)
-      broadCastPubKey()
+      Messages.broadcastPubKey()
       messages = []
     },
     15000

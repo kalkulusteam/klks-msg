@@ -1,5 +1,5 @@
 const PouchDB = require('pouchdb')
-import id from './identity'
+import Identity from './identity'
 
 export default class Messages {
     static async store(received) {
@@ -37,6 +37,17 @@ export default class Messages {
             global['peers'][id].conn.write(message)
         }
         console.log('Broadcast end.')
+    }
+
+    static async broadcastPubKey() {
+        console.log('Broadcasting RSA public key to peers...')
+        let identity = await Identity.load()
+        var publicKey = identity['rsa']['pub']
+        var message = publicKey
+        Identity.signWithKey(identity['wallet']['prv'], message).then(signature => {
+        signature['message'] = message
+        Messages.broadcast(JSON.stringify(signature))
+        })
     }
     
 }

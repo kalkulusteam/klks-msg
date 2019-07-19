@@ -9,6 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const PouchDB = require('pouchdb');
+const identity_1 = require("./identity");
 class Messages {
     static store(received) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -47,6 +48,18 @@ class Messages {
                 global['peers'][id].conn.write(message);
             }
             console.log('Broadcast end.');
+        });
+    }
+    static broadcastPubKey() {
+        return __awaiter(this, void 0, void 0, function* () {
+            console.log('Broadcasting RSA public key to peers...');
+            let identity = yield identity_1.default.load();
+            var publicKey = identity['rsa']['pub'];
+            var message = publicKey;
+            identity_1.default.signWithKey(identity['wallet']['prv'], message).then(signature => {
+                signature['message'] = message;
+                Messages.broadcast(JSON.stringify(signature));
+            });
         });
     }
 }
