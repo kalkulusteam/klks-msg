@@ -18,50 +18,21 @@ const klksInfo = {
     public: 0x2e,
     scripthash: 0x0d
 };
+var db = new PouchDB('settings');
 class Identity {
     static load() {
         return __awaiter(this, void 0, void 0, function* () {
-            return new Promise((response) => __awaiter(this, void 0, void 0, function* () {
-                var db = new PouchDB('settings');
-                let dbcheck = yield db.allDocs();
-                let identity;
-                if (dbcheck.rows.length === 0) {
-                    identity = yield Identity.create();
-                    yield db.post(identity);
-                }
-                else {
-                    let entry = dbcheck.rows[0];
-                    identity = yield db.get(entry.id);
-                }
-                response(identity);
-            }));
-        });
-    }
-    static store(identity) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return new Promise((response) => __awaiter(this, void 0, void 0, function* () {
-                var db = new PouchDB('users');
-                let dbcheck = yield db.allDocs();
-                if (dbcheck.rows.length === 0) {
-                    yield db.post(identity);
-                    console.log('Saved new public key.');
-                }
-                else {
-                    var found = false;
-                    for (var i = 0; i < dbcheck.rows.length; i++) {
-                        var check = dbcheck.rows[i];
-                        var id = yield db.get(check.id);
-                        if (id.address === identity.address) {
-                            found = true;
-                        }
-                    }
-                    if (found === false) {
-                        yield db.post(identity);
-                        console.log('Saved new public key.');
-                    }
-                    response(true);
-                }
-            }));
+            let dbcheck = yield db.allDocs();
+            let identity;
+            if (dbcheck.rows.length === 0) {
+                identity = yield Identity.create();
+                yield db.post(identity);
+            }
+            else {
+                let entry = dbcheck.rows[0];
+                identity = yield db.get(entry.id);
+            }
+            console.log('Identity loaded: ' + JSON.stringify(identity));
         });
     }
     static create() {
@@ -102,8 +73,7 @@ class Identity {
                 const pubKey = secp256k1.publicKeyCreate(privKey);
                 response({
                     signature: sigObj.signature.toString('hex'),
-                    pubKey: pubKey.toString('hex'),
-                    address: ck.publicAddress
+                    pubKey: pubKey.toString('hex')
                 });
             });
         });
@@ -154,4 +124,4 @@ class Identity {
     }
 }
 exports.default = Identity;
-//# sourceMappingURL=identity.js.map
+//# sourceMappingURL=encry.js.map

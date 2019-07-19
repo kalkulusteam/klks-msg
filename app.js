@@ -12,6 +12,8 @@ const electron_1 = require("electron");
 const main_1 = require("./main");
 const api_1 = require("./api");
 const identity_1 = require("./identity");
+const encryption_1 = require("./encryption");
+const messages_1 = require("./messages");
 const crypto = require('crypto');
 const Swarm = require('discovery-swarm');
 const getPort = require('get-port');
@@ -19,12 +21,11 @@ const fs = require('fs');
 const config = require('./config.json');
 require('events').EventEmitter.defaultMaxListeners = 150;
 var argv = require('minimist')(process.argv.slice(2));
-if (argv.server === undefined || config.SERVER_MODE === false) {
+if (argv.server === undefined) {
     console.log('Starting interface');
     main_1.default.main(electron_1.app, electron_1.BrowserWindow);
 }
 api_1.default.init();
-identity_1.default.load();
 const peers = {};
 let connSeq = 0;
 let messages = [];
@@ -39,10 +40,11 @@ const broadCast = (message) => __awaiter(this, void 0, void 0, function* () {
 });
 const broadCastPubKey = () => __awaiter(this, void 0, void 0, function* () {
     if (sw.connected > 0) {
-        //console.log('Broadcasting pubKey to peers...')
-        var publicKey = fs.readFileSync('keys/public.pem', "utf8");
+        console.log('Broadcasting RSA public key to peers...');
+        let identity = yield identity_1.default.load();
+        var publicKey = identity['rsa']['pub'];
         var message = publicKey;
-        identity_1.default.signWithKey(config.NODE_KEY, message).then(signature => {
+        identity_1.default.signWithKey(identity['wallet']['prv'], message).then(signature => {
             signature['message'] = message;
             broadCast(JSON.stringify(signature));
         });
@@ -56,45 +58,13 @@ const sw = Swarm({
     tcp: true
 });
 //SWARM
-//ENCRYPTION
-const generateKeys = () => {
-    const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
-        modulusLength: 4096,
-        namedCurve: 'secp256k1',
-        publicKeyEncoding: {
-            type: 'spki',
-            format: 'pem'
-        },
-        privateKeyEncoding: {
-            type: 'pkcs8',
-            format: 'pem'
-        }
-    });
-    if (!fs.existsSync('keys/private.pem')) {
-        fs.writeFileSync('keys/private.pem', privateKey);
-        fs.writeFileSync('keys/public.pem', publicKey);
-    }
-};
-var encryptMessage = function (toEncrypt, keyPath) {
-    var publicKey = fs.readFileSync(keyPath, "utf8");
-    var buffer = Buffer.from(toEncrypt);
-    var encrypted = crypto.publicEncrypt(publicKey, buffer);
-    return encrypted.toString("base64");
-};
-var decryptMessage = function (toDecrypt, keyPath) {
-    var privateKey = fs.readFileSync(keyPath, "utf8");
-    var buffer = Buffer.from(toDecrypt, "base64");
-    const decrypted = crypto.privateDecrypt({
-        key: privateKey.toString()
-    }, buffer);
-    return decrypted.toString("utf8");
-};
-//ENCRYPTION
 function initEngine() {
     return __awaiter(this, void 0, void 0, function* () {
+        let identity = yield identity_1.default.load();
+        console.log('Identity loaded: ' + identity['wallet']['pub']);
         const port = yield getPort();
         sw.listen(port);
-        console.log('Listening to port: ' + port);
+        console.log('Swarm listening to port: ' + port);
         const swarmchannel = config.SWARM_CHANNEL;
         sw.join(swarmchannel);
         sw.on('connect-failed', function (peer, details) {
@@ -123,55 +93,45 @@ function initEngine() {
                     }, 10000);
                 }
             }
-            conn.on('data', data => {
+            conn.on('data', (data) => __awaiter(this, void 0, void 0, function* () {
                 try {
                     var received = JSON.parse(data.toString());
-                    identity_1.default.verifySign(received.pubKey, received.signature, received.message).then(signature => {
+                    identity_1.default.verifySign(received.pubKey, received.signature, received['message']).then((signature) => __awaiter(this, void 0, void 0, function* () {
                         if (signature === true) {
-                            try {
-                                var decrypted = decryptMessage(received.message, 'keys/private.pem');
-                                var d = new Date();
-                                var n = d.toLocaleString();
-                                if (messages.indexOf(received.signature) === -1) {
-                                    messages.push(received.signature);
-                                    console.log('\x1b[32m%s\x1b[0m \x1b[36m%s\x1b[0m', '[' + n + '] [SAFU]', received.address + ':', decrypted);
-                                }
+                            console.log('Received valid message from ' + received['address'] + '.');
+                            var decrypted = yield encryption_1.default.decryptMessage(received['message']);
+                            if (decrypted !== false) {
+                                received.decrypted = decrypted;
+                                messages_1.default.store(received);
+                                console.log('\x1b[32m%s\x1b[0m', 'Received SAFU message from ' + received['address']);
                             }
-                            catch (e) {
-                                if (received.message.indexOf('-----BEGIN PUBLIC KEY-----') !== -1) {
-                                    if (!fs.existsSync('users/' + received.address + '.pem')) {
-                                        fs.writeFileSync('users/' + received.address + '.pem', received.message);
-                                        console.log('Received new public key.');
-                                    }
+                            else {
+                                if (received['message'].indexOf('-----BEGIN PUBLIC KEY-----') !== -1) {
+                                    identity_1.default.store({
+                                        address: received['address'],
+                                        pubkey: received['message']
+                                    });
                                 }
                                 else {
-                                    var d = new Date();
-                                    var n = d.toLocaleString();
-                                    if (messages.indexOf(received.signature) === -1) {
-                                        messages.push(received.signature);
-                                        console.log('\x1b[32m%s\x1b[0m \x1b[36m%s\x1b[0m', '[' + n + ']', received.address + ':', received.message);
-                                    }
+                                    console.log('\x1b[32m%s\x1b[0m', 'Received public message from ' + received['address']);
+                                    messages_1.default.store(received);
                                 }
                             }
-                            if (config.RELAY === 'true') {
-                                broadCast(data.toString());
-                            }
                         }
-                    });
+                    }));
                 }
                 catch (e) {
                     if (config.DEBUG === 'true') {
                         console.log('Received unsigned data, ignoring.');
                     }
                 }
-            });
+            }));
             conn.on('close', () => {
                 if (peers[peerId].seq === seq) {
                     delete peers[peerId];
                 }
             });
         });
-        generateKeys();
         setInterval(function () {
             sw.join(swarmchannel);
             broadCastPubKey();
@@ -186,6 +146,5 @@ function initEngine() {
         }, 5000);
     });
 }
-//INIT MESSENGER ENGINE
 initEngine();
 //# sourceMappingURL=app.js.map

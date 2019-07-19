@@ -2,6 +2,7 @@ var CoinKey = require('coinkey')
 const CryptoJS = require('crypto-js')
 const secp256k1 = require('secp256k1')
 const PouchDB = require('pouchdb')
+const crypto = require('crypto')
 
 const klksInfo = {
     private: 0xae,
@@ -9,23 +10,50 @@ const klksInfo = {
     scripthash: 0x0d
 };
 
-var db = new PouchDB('settings');
-
 export default class Identity {
     static async load() {
-        let dbcheck = await db.allDocs()
-        let identity
-        if(dbcheck.rows.length === 0){
-            identity = await Identity.create()
-            await db.post(identity)
-        }else{
-            let entry = dbcheck.rows[0]
-            identity = await db.get(entry.id)
-        }
-        console.log('Identity loaded: ' + identity.pub)
+        return new Promise( async response => {
+            var db = new PouchDB('settings');
+            let dbcheck = await db.allDocs()
+            let identity
+            if(dbcheck.rows.length === 0){
+                identity = await Identity.create()
+                await db.post(identity)
+            }else{
+                let entry = dbcheck.rows[0]
+                identity = await db.get(entry.id)
+            }
+            response(identity)
+        })
     }
+
+    static async store(identity) {
+        return new Promise( async response => {
+            var db = new PouchDB('users')
+            let dbcheck = await db.allDocs()
+            if(dbcheck.rows.length === 0){
+                await db.post(identity)
+                console.log('Saved new public key.')
+            }else{
+                var found = false
+                for(var i = 0; i < dbcheck.rows.length; i++){
+                    var check = dbcheck.rows[i]
+                    var id = await db.get(check.id)
+                    if(id.address === identity.address){
+                        found = true
+                    }
+                }
+                if(found === false){
+                    await db.post(identity)
+                    console.log('Saved new public key.')
+                }
+                response(true)
+            }
+        })
+    }
+    
     static async create() {
-        return new Promise(response => {
+        return new Promise( async response => {
             var ck = new CoinKey.createRandom(klksInfo)
             
             var klksprv = ck.privateWif;
@@ -39,9 +67,20 @@ export default class Identity {
                 prv: klksprv,
                 pub: klkspub,
                 key: klkskey
+            }  
+
+            var keys = await Identity.generateKeys()
+            var rsa = {
+                pub: keys['pub'],
+                priv: keys['priv']
             }
 
-            response(wallet)
+            let identity = {
+                wallet: wallet,
+                rsa: rsa
+            }
+
+            response(identity)
         })
     }
 
@@ -55,7 +94,8 @@ export default class Identity {
             const pubKey = secp256k1.publicKeyCreate(privKey)
             response({
                 signature: sigObj.signature.toString('hex'),
-                pubKey: pubKey.toString('hex')
+                pubKey: pubKey.toString('hex'),
+                address: ck.publicAddress
             })
         })
     }
@@ -78,5 +118,28 @@ export default class Identity {
             let verified = secp256k1.verify(msg, signature, pubKey)
             response(verified)
         })
+    }
+
+    static async generateKeys(){
+        return new Promise(response => {
+            const { publicKey, privateKey } = 
+            crypto.generateKeyPairSync('rsa', 
+                {
+                    modulusLength: 4096,
+                    namedCurve: 'secp256k1',
+                    publicKeyEncoding: {
+                        type: 'spki',
+                        format: 'pem'     
+                    },     
+                    privateKeyEncoding: {
+                        type: 'pkcs8',
+                        format: 'pem'
+                    } 
+                });
+                response({
+                    pub: publicKey,
+                    priv: privateKey
+                })
+            }) 
     }
 }

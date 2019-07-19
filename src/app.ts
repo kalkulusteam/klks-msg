@@ -2,6 +2,8 @@ import { app, BrowserWindow } from 'electron';
 import Main from './main';
 import Api from './api';
 import Identity from './identity';
+import Encryption from './encryption';
+import Messages from './messages';
 
 const crypto = require('crypto')
 const Swarm = require('discovery-swarm')
@@ -11,13 +13,12 @@ const config = require('./config.json')
 require('events').EventEmitter.defaultMaxListeners = 150;
 var argv = require('minimist')(process.argv.slice(2))
 
-if(argv.server === undefined || config.SERVER_MODE === false){
+if(argv.server === undefined){
     console.log('Starting interface')
     Main.main(app, BrowserWindow);
 }
 
 Api.init()
-Identity.load()
 
 const peers = {}
 let connSeq = 0
@@ -25,25 +26,26 @@ let messages = []
 let relayed = []
 
 const broadCast = async (message) => {
-    //console.log('Broadcasting now...')
-    if(sw.connected > 0){
-      for (let id in peers) {
-        peers[id].conn.write(message)
-      }
+  //console.log('Broadcasting now...')
+  if(sw.connected > 0){
+    for (let id in peers) {
+      peers[id].conn.write(message)
     }
   }
+}
   
-  const broadCastPubKey = async () => {
-    if(sw.connected > 0){
-      //console.log('Broadcasting pubKey to peers...')
-      var publicKey = fs.readFileSync('keys/public.pem', "utf8");
-      var message = publicKey
-      Identity.signWithKey(config.NODE_KEY, message).then(signature => {
-        signature['message'] = message
-        broadCast(JSON.stringify(signature))
-      })
-    }
+const broadCastPubKey = async () => {
+  if(sw.connected > 0){
+    console.log('Broadcasting RSA public key to peers...')
+    let identity = await Identity.load()
+    var publicKey = identity['rsa']['pub']
+    var message = publicKey
+    Identity.signWithKey(identity['wallet']['prv'], message).then(signature => {
+      signature['message'] = message
+      broadCast(JSON.stringify(signature))
+    })
   }
+}
 
 const NodeID = crypto.randomBytes(32)
 console.log('Your Swarm identity: /swarm/klksmsg/' + NodeID.toString('hex'))
@@ -55,53 +57,14 @@ const sw = Swarm({
 })
 //SWARM
 
-//ENCRYPTION
-const generateKeys = () => {
-  const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', 
-  {
-    modulusLength: 4096,
-    namedCurve: 'secp256k1',
-    publicKeyEncoding: {
-        type: 'spki',
-        format: 'pem'     
-    },     
-    privateKeyEncoding: {
-        type: 'pkcs8',
-        format: 'pem'
-    } 
-  });
-
-  if (!fs.existsSync('keys/private.pem')) {
-    fs.writeFileSync('keys/private.pem', privateKey)
-    fs.writeFileSync('keys/public.pem', publicKey)
-  }
-}
-
-var encryptMessage = function(toEncrypt, keyPath) {
-  var publicKey = fs.readFileSync(keyPath, "utf8");
-  var buffer = Buffer.from(toEncrypt);
-  var encrypted = crypto.publicEncrypt(publicKey, buffer);
-  return encrypted.toString("base64");
-};
-
-var decryptMessage = function(toDecrypt, keyPath) {
-  var privateKey = fs.readFileSync(keyPath, "utf8");
-  var buffer = Buffer.from(toDecrypt, "base64");
-  const decrypted = crypto.privateDecrypt(
-      {
-          key: privateKey.toString()
-      },
-      buffer,
-  )
-  return decrypted.toString("utf8");
-}
-//ENCRYPTION
-
 async function initEngine(){
+
+  let identity = await Identity.load()
+  console.log('Identity loaded: ' + identity['wallet']['pub'])
 
   const port = await getPort()
   sw.listen(port)
-  console.log('Listening to port: ' + port)
+  console.log('Swarm listening to port: ' + port)
   const swarmchannel = config.SWARM_CHANNEL
   sw.join(swarmchannel)
 
@@ -135,36 +98,27 @@ async function initEngine(){
       }
     }
 
-    conn.on('data', data => {
+    conn.on('data', async data => {
       try{
         var received = JSON.parse(data.toString())
-        Identity.verifySign(received.pubKey, received.signature, received.message).then(signature => {
+        Identity.verifySign(received.pubKey, received.signature, received['message']).then(async signature => {
           if(signature === true){
-            try{
-              var decrypted = decryptMessage(received.message, 'keys/private.pem')
-              var d = new Date()
-              var n = d.toLocaleString()
-              if(messages.indexOf(received.signature) === -1){
-                messages.push(received.signature)
-                console.log('\x1b[32m%s\x1b[0m \x1b[36m%s\x1b[0m', '['+ n +'] [SAFU]',received.address + ':', decrypted)
-              }
-            }catch(e){
-              if(received.message.indexOf('-----BEGIN PUBLIC KEY-----') !== -1){
-                if (!fs.existsSync('users/'+ received.address +'.pem')) {
-                  fs.writeFileSync('users/'+ received.address +'.pem', received.message)
-                  console.log('Received new public key.')
-                }
+            console.log('Received valid message from ' + received['address'] + '.')
+            var decrypted = await Encryption.decryptMessage(received['message'])
+            if(decrypted !== false){
+              received.decrypted = decrypted
+              Messages.store(received)
+              console.log('\x1b[32m%s\x1b[0m', 'Received SAFU message from ' + received['address'])
+            }else{
+              if(received['message'].indexOf('-----BEGIN PUBLIC KEY-----') !== -1){
+                Identity.store({
+                  address: received['address'],
+                  pubkey: received['message']
+                })
               }else{
-                var d = new Date()
-                var n = d.toLocaleString()
-                if(messages.indexOf(received.signature) === -1){
-                  messages.push(received.signature)
-                  console.log('\x1b[32m%s\x1b[0m \x1b[36m%s\x1b[0m', '['+ n +']',received.address + ':', received.message)
-                }
+                console.log('\x1b[32m%s\x1b[0m', 'Received public message from ' + received['address'])
+                Messages.store(received)
               }
-            }
-            if(config.RELAY === 'true'){
-              broadCast(data.toString())
             }
           }
         })
@@ -183,7 +137,6 @@ async function initEngine(){
 
   })
   
-  generateKeys()
   setInterval(
     function (){
       sw.join(swarmchannel)
@@ -201,5 +154,4 @@ async function initEngine(){
   },5000)
 }
 
-//INIT MESSENGER ENGINE
 initEngine()

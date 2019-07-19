@@ -10,6 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const getPort = require('get-port');
 const isPortAvailable = require('is-port-available');
+var formidable = require('formidable');
 class Utilities {
     static freeport() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -27,6 +28,36 @@ class Utilities {
                     available = yield isPortAvailable(port);
                 }
                 response(port);
+            }));
+        });
+    }
+    static body(req) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((response) => __awaiter(this, void 0, void 0, function* () {
+                var jsonEmpty = true;
+                for (var key in req.body) {
+                    if (key !== undefined) {
+                        jsonEmpty = false;
+                    }
+                }
+                if (jsonEmpty === true) {
+                    var form = new formidable.IncomingForm();
+                    form.parse(req, function (err, fields, files) {
+                        response({
+                            body: fields,
+                            files: files
+                        });
+                    });
+                    setTimeout(function () {
+                        response(false);
+                    }, 200);
+                }
+                else {
+                    response({
+                        body: req.body,
+                        files: []
+                    });
+                }
             }));
         });
     }
