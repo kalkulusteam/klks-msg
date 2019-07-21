@@ -3,10 +3,8 @@ const crypto = require('crypto')
 import id from './identity'
 
 export default class Identity {
-    static async encryptMessage(toEncrypt) {
+    static async encryptMessage(toEncrypt, publicKey) {
         return new Promise( async response => {
-            let identity = await id.load()
-            var publicKey = identity['rsa']['pub']
             var buffer = Buffer.from(toEncrypt)
             var encrypted = crypto.publicEncrypt(publicKey, buffer)
             response(encrypted.toString("base64"))

@@ -14,9 +14,11 @@ const Identicon = require('identicon.js');
 const fs = require('fs');
 const config = require('./config.json');
 const identity_1 = require("./identity");
+const encryption_1 = require("./encryption");
 const messages_1 = require("./messages");
 const utilities_1 = require("./utilities");
 const PouchDB = require('pouchdb');
+PouchDB.plugin(require('pouchdb-find'));
 var messages = [];
 var relayed = [];
 class Api {
@@ -38,8 +40,13 @@ class Api {
             for (var i = 0; i < dbstore.rows.length; i++) {
                 var check = dbstore.rows[i];
                 var message = yield db.get(check.id);
-                messages.push(message);
+                if (message.type === 'public') {
+                    messages.push(message);
+                }
             }
+            messages.sort(function (a, b) {
+                return parseFloat(a.timestamp) - parseFloat(b.timestamp);
+            });
             res.send(messages);
         }));
         //api.get('/connections', (req, res) => res.send(sw.connected))
@@ -49,18 +56,34 @@ class Api {
                 var message = body['body'].message;
                 var receiver = body['body'].receiver;
                 let identity = yield identity_1.default.load();
-                if (receiver === 'private') {
-                    //SEND PRIVATE MESSAGE
+                if (receiver === 'public') {
+                    identity_1.default.signWithKey(identity['wallet']['prv'], message).then(signature => {
+                        signature['message'] = message;
+                        signature['type'] = message;
+                        messages_1.default.broadcast(JSON.stringify(signature));
+                        res.send(signature);
+                    });
                 }
                 else if (receiver === 'group') {
                     //SEND GROUP MESSAGE
                 }
                 else {
-                    identity_1.default.signWithKey(identity['wallet']['prv'], message).then(signature => {
-                        signature['message'] = message;
-                        messages_1.default.broadcast(JSON.stringify(signature));
-                        res.send(signature);
-                    });
+                    let user = yield identity_1.default.find(receiver);
+                    if (user !== false && user !== undefined) {
+                        let encrypted = yield encryption_1.default.encryptMessage(message, user);
+                        identity_1.default.signWithKey(identity['wallet']['prv'], encrypted).then(signature => {
+                            signature['message'] = encrypted;
+                            signature['type'] = 'SAFU';
+                            messages_1.default.broadcast(JSON.stringify(signature));
+                            res.send(signature);
+                        });
+                    }
+                    else {
+                        res.send({
+                            error: true,
+                            message: "Can't sign message, users isn't in your contact list."
+                        });
+                    }
                 }
             }
             else {
@@ -69,6 +92,17 @@ class Api {
                     message: 'Specify message and receiver'
                 });
             }
+        }));
+        api.get('/contacts', (req, res) => __awaiter(this, void 0, void 0, function* () {
+            let contacts = [];
+            var db = new PouchDB('users');
+            let dbcheck = yield db.allDocs();
+            for (var i = 0; i < dbcheck.rows.length; i++) {
+                var check = dbcheck.rows[i];
+                var id = yield db.get(check.id);
+                contacts.push(id);
+            }
+            res.send(contacts);
         }));
         api.listen(frontendPort, () => console.log(`Engine listening on port ${frontendPort}!`));
     }

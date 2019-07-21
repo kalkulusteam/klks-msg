@@ -12,11 +12,9 @@ const PouchDB = require('pouchdb');
 const crypto = require('crypto');
 const identity_1 = require("./identity");
 class Identity {
-    static encryptMessage(toEncrypt) {
+    static encryptMessage(toEncrypt, publicKey) {
         return __awaiter(this, void 0, void 0, function* () {
             return new Promise((response) => __awaiter(this, void 0, void 0, function* () {
-                let identity = yield identity_1.default.load();
-                var publicKey = identity['rsa']['pub'];
                 var buffer = Buffer.from(toEncrypt);
                 var encrypted = crypto.publicEncrypt(publicKey, buffer);
                 response(encrypted.toString("base64"));

@@ -1,14 +1,17 @@
 const PouchDB = require('pouchdb')
+PouchDB.plugin(require('pouchdb-find'))
 import Identity from './identity'
 
 export default class Messages {
-    static async store(received) {
+    static async store(received, type) {
         return new Promise( async response => {
             var db = new PouchDB('messages')
             let dbcheck = await db.allDocs()
             var d = new Date()
             var n = d.toLocaleString()
             received.received_at = n
+            received.timestamp = d.getTime()
+            received.type = type
 
             if(dbcheck.rows.length === 0){
                 await db.post(received)
@@ -45,8 +48,8 @@ export default class Messages {
         var publicKey = identity['rsa']['pub']
         var message = publicKey
         Identity.signWithKey(identity['wallet']['prv'], message).then(signature => {
-        signature['message'] = message
-        Messages.broadcast(JSON.stringify(signature))
+            signature['message'] = message
+            Messages.broadcast(JSON.stringify(signature))
         })
     }
     

@@ -2,6 +2,7 @@ var CoinKey = require('coinkey')
 const CryptoJS = require('crypto-js')
 const secp256k1 = require('secp256k1')
 const PouchDB = require('pouchdb')
+PouchDB.plugin(require('pouchdb-find'))
 const crypto = require('crypto')
 
 const klksInfo = {
@@ -48,6 +49,26 @@ export default class Identity {
                     console.log('Saved new public key.')
                 }
                 response(true)
+            }
+        })
+    }
+
+    static async find(address) {
+        return new Promise( async response => {
+            var db = new PouchDB('users')
+            let dbcheck = await db.allDocs()
+            if(dbcheck.rows.length === 0){
+                response(false)
+            }else{
+                var found = false
+                for(var i = 0; i < dbcheck.rows.length; i++){
+                    var check = dbcheck.rows[i]
+                    var id = await db.get(check.id)
+                    if(id.address === address){
+                        found = id.pubkey
+                    }
+                }
+                response(found)
             }
         })
     }

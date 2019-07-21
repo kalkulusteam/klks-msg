@@ -9,9 +9,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const PouchDB = require('pouchdb');
+PouchDB.plugin(require('pouchdb-find'));
 const identity_1 = require("./identity");
 class Messages {
-    static store(received) {
+    static store(received, type) {
         return __awaiter(this, void 0, void 0, function* () {
             return new Promise((response) => __awaiter(this, void 0, void 0, function* () {
                 var db = new PouchDB('messages');
@@ -19,6 +20,8 @@ class Messages {
                 var d = new Date();
                 var n = d.toLocaleString();
                 received.received_at = n;
+                received.timestamp = d.getTime();
+                received.type = type;
                 if (dbcheck.rows.length === 0) {
                     yield db.post(received);
                     console.log('Saved new message.');

@@ -81,8 +81,7 @@ function initEngine() {
                             console.log('Received valid message from ' + received['address'] + '.');
                             var decrypted = yield encryption_1.default.decryptMessage(received['message']);
                             if (decrypted !== false) {
-                                received.decrypted = decrypted;
-                                messages_1.default.store(received);
+                                messages_1.default.store(received, 'private');
                                 console.log('\x1b[32m%s\x1b[0m', 'Received SAFU message from ' + received['address']);
                             }
                             else {
@@ -93,8 +92,10 @@ function initEngine() {
                                     });
                                 }
                                 else {
-                                    console.log('\x1b[32m%s\x1b[0m', 'Received public message from ' + received['address']);
-                                    messages_1.default.store(received);
+                                    if (received['type'] === 'public') {
+                                        console.log('\x1b[32m%s\x1b[0m', 'Received public message from ' + received['address']);
+                                        messages_1.default.store(received, 'public');
+                                    }
                                 }
                             }
                         }

@@ -12,6 +12,7 @@ var CoinKey = require('coinkey');
 const CryptoJS = require('crypto-js');
 const secp256k1 = require('secp256k1');
 const PouchDB = require('pouchdb');
+PouchDB.plugin(require('pouchdb-find'));
 const crypto = require('crypto');
 const klksInfo = {
     private: 0xae,
@@ -60,6 +61,28 @@ class Identity {
                         console.log('Saved new public key.');
                     }
                     response(true);
+                }
+            }));
+        });
+    }
+    static find(address) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((response) => __awaiter(this, void 0, void 0, function* () {
+                var db = new PouchDB('users');
+                let dbcheck = yield db.allDocs();
+                if (dbcheck.rows.length === 0) {
+                    response(false);
+                }
+                else {
+                    var found = false;
+                    for (var i = 0; i < dbcheck.rows.length; i++) {
+                        var check = dbcheck.rows[i];
+                        var id = yield db.get(check.id);
+                        if (id.address === address) {
+                            found = id.pubkey;
+                        }
+                    }
+                    response(found);
                 }
             }));
         });

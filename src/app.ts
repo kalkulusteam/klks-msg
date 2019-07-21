@@ -84,8 +84,7 @@ async function initEngine(){
             console.log('Received valid message from ' + received['address'] + '.')
             var decrypted = await Encryption.decryptMessage(received['message'])
             if(decrypted !== false){
-              received.decrypted = decrypted
-              Messages.store(received)
+              Messages.store(received, 'private')
               console.log('\x1b[32m%s\x1b[0m', 'Received SAFU message from ' + received['address'])
             }else{
               if(received['message'].indexOf('-----BEGIN PUBLIC KEY-----') !== -1){
@@ -94,8 +93,10 @@ async function initEngine(){
                   pubkey: received['message']
                 })
               }else{
-                console.log('\x1b[32m%s\x1b[0m', 'Received public message from ' + received['address'])
-                Messages.store(received)
+                if(received['type'] === 'public'){
+                  console.log('\x1b[32m%s\x1b[0m', 'Received public message from ' + received['address'])
+                  Messages.store(received, 'public')
+                }
               }
             }
           }
