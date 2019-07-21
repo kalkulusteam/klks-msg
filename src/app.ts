@@ -5,7 +5,7 @@ import Identity from './identity';
 import Encryption from './encryption';
 import Messages from './messages';
 
-const WebTorrent = require('webtorrent-hybrid')
+const WebTorrent = require('webtorrent')
 const crypto = require('crypto')
 const Swarm = require('discovery-swarm')
 const getPort = require('get-port')
