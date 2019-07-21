@@ -35,11 +35,11 @@ export default class Messages {
     }
 
     static async broadcast(message) {
-        console.log('Broadcasting to network..')
+        //console.log('Broadcasting to network..')
         for (let id in global['peers']) {
             global['peers'][id].conn.write(message)
         }
-        console.log('Broadcast end.')
+        //console.log('Broadcast end.')
     }
 
     static async broadcastPubKey() {
@@ -53,4 +53,25 @@ export default class Messages {
         })
     }
     
+    static async relayMessages(){
+        console.log('Relaying received messages to peers...')
+        var db = new PouchDB('messages')
+        let dbstore = await db.allDocs()
+        var messages = []
+        for(var i = 0; i < dbstore.rows.length; i++){
+            var check = dbstore.rows[i]
+            var message = await db.get(check.id)
+            var d = new Date()
+            var t = d.getTime()
+            var e = (t - message.timestamp) / 1000
+            if(e < 172800){
+                delete message._id
+                delete message._rev
+                delete message.timestamp
+                delete message.received_at
+                Messages.broadcast(message)
+            }
+        }
+    }
+
 }

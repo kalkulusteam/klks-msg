@@ -41,6 +41,8 @@ class Api {
                 var check = dbstore.rows[i];
                 var message = yield db.get(check.id);
                 if (message.type === 'public') {
+                    delete message._id;
+                    delete message._rev;
                     messages.push(message);
                 }
             }

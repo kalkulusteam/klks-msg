@@ -22,8 +22,7 @@ Api.init()
 
 global['peers'] = {}
 let connSeq = 0
-let messages = []
-let relayed = []
+global['relayed'] = []
   
 const NodeID = crypto.randomBytes(32)
 console.log('Your Swarm identity: /swarm/klksmsg/' + NodeID.toString('hex'))
@@ -120,10 +119,11 @@ async function initEngine(){
     function (){
       sw.join(swarmchannel)
       Messages.broadcastPubKey()
-      messages = []
+      Messages.relayMessages()
     },
     15000
   )
+  
   console.log('Bootstraping connections, the interface will be ready soon...')
   var connectionReady = setInterval(function(){
     if(sw.connected > 0){

@@ -46,11 +46,11 @@ class Messages {
     }
     static broadcast(message) {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log('Broadcasting to network..');
+            //console.log('Broadcasting to network..')
             for (let id in global['peers']) {
                 global['peers'][id].conn.write(message);
             }
-            console.log('Broadcast end.');
+            //console.log('Broadcast end.')
         });
     }
     static broadcastPubKey() {
@@ -63,6 +63,28 @@ class Messages {
                 signature['message'] = message;
                 Messages.broadcast(JSON.stringify(signature));
             });
+        });
+    }
+    static relayMessages() {
+        return __awaiter(this, void 0, void 0, function* () {
+            console.log('Relaying received messages to peers...');
+            var db = new PouchDB('messages');
+            let dbstore = yield db.allDocs();
+            var messages = [];
+            for (var i = 0; i < dbstore.rows.length; i++) {
+                var check = dbstore.rows[i];
+                var message = yield db.get(check.id);
+                var d = new Date();
+                var t = d.getTime();
+                var e = (t - message.timestamp) / 1000;
+                if (e < 172800) {
+                    delete message._id;
+                    delete message._rev;
+                    delete message.timestamp;
+                    delete message.received_at;
+                    Messages.broadcast(message);
+                }
+            }
         });
     }
 }

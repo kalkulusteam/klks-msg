@@ -35,6 +35,8 @@ export default class Api {
                 var message = await db.get(check.id)
                 
                 if(message.type === 'public'){
+                    delete message._id
+                    delete message._rev
                     messages.push(message)
                 }
             }
