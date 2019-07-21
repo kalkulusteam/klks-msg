@@ -5,6 +5,7 @@ import Identity from './identity';
 import Encryption from './encryption';
 import Messages from './messages';
 
+const WebTorrent = require('webtorrent-hybrid')
 const crypto = require('crypto')
 const Swarm = require('discovery-swarm')
 const getPort = require('get-port')
@@ -35,7 +36,12 @@ const sw = Swarm({
 //SWARM
 
 async function initEngine(){
-
+  var client = new WebTorrent()
+  var buf = Buffer.from('Webtorrent test')
+  buf['name'] = 'klksmessagetest'
+  client.seed(buf, function(torrent){
+    console.log(torrent)
+  })
   let identity = await Identity.load()
   console.log('Identity loaded: ' + identity['wallet']['pub'])
 

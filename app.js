@@ -14,6 +14,7 @@ const api_1 = require("./api");
 const identity_1 = require("./identity");
 const encryption_1 = require("./encryption");
 const messages_1 = require("./messages");
+const WebTorrent = require('webtorrent-hybrid');
 const crypto = require('crypto');
 const Swarm = require('discovery-swarm');
 const getPort = require('get-port');
@@ -39,6 +40,12 @@ const sw = Swarm({
 //SWARM
 function initEngine() {
     return __awaiter(this, void 0, void 0, function* () {
+        var client = new WebTorrent();
+        var buf = Buffer.from('Webtorrent test');
+        buf['name'] = 'klksmessagetest';
+        client.seed(buf, function (torrent) {
+            console.log(torrent);
+        });
         let identity = yield identity_1.default.load();
         console.log('Identity loaded: ' + identity['wallet']['pub']);
         const port = yield getPort();
