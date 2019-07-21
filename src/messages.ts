@@ -57,7 +57,6 @@ export default class Messages {
         console.log('Relaying received messages to peers...')
         var db = new PouchDB('messages')
         let dbstore = await db.allDocs()
-        var messages = []
         for(var i = 0; i < dbstore.rows.length; i++){
             var check = dbstore.rows[i]
             var message = await db.get(check.id)

@@ -116,9 +116,14 @@ function initEngine() {
             });
         });
         setInterval(function () {
-            sw.join(swarmchannel);
-            messages_1.default.broadcastPubKey();
-            messages_1.default.relayMessages();
+            if (sw.connected === 0) {
+                console.log('No connections, try to connect again..');
+                sw.join(config.SWARM_CHANNEL);
+            }
+            else {
+                messages_1.default.broadcastPubKey();
+                messages_1.default.relayMessages();
+            }
         }, 15000);
         console.log('Bootstraping connections, the interface will be ready soon...');
         var connectionReady = setInterval(function () {

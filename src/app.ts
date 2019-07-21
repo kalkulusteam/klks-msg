@@ -53,7 +53,6 @@ async function initEngine(){
   
   sw.on('connection', (conn, info) => {
     const seq = connSeq
-
     const peerId = info.id.toString('hex')
     if (!global['peers'][peerId]) {
       console.log(`Connected to peer: /swarm/klksmsg/${peerId}`)
@@ -120,9 +119,13 @@ async function initEngine(){
   
   setInterval(
     function (){
-      sw.join(swarmchannel)
-      Messages.broadcastPubKey()
-      Messages.relayMessages()
+      if(sw.connected === 0){
+        console.log('No connections, try to connect again..')
+        sw.join(config.SWARM_CHANNEL)
+      }else{
+        Messages.broadcastPubKey()
+        Messages.relayMessages()
+      }
     },
     15000
   )

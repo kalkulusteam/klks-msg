@@ -70,7 +70,6 @@ class Messages {
             console.log('Relaying received messages to peers...');
             var db = new PouchDB('messages');
             let dbstore = yield db.allDocs();
-            var messages = [];
             for (var i = 0; i < dbstore.rows.length; i++) {
                 var check = dbstore.rows[i];
                 var message = yield db.get(check.id);

@@ -51,8 +51,28 @@ class Api {
             });
             res.send(messages);
         }));
-        //api.get('/connections', (req, res) => res.send(sw.connected))
-        api.post('/messages/send', (req, res) => __awaiter(this, void 0, void 0, function* () {
+        api.get('/messages/address/:address', (req, res) => __awaiter(this, void 0, void 0, function* () {
+            var db = new PouchDB('messages');
+            let dbstore = yield db.allDocs();
+            var messages = [];
+            for (var i = 0; i < dbstore.rows.length; i++) {
+                var check = dbstore.rows[i];
+                var message = yield db.get(check.id);
+                if (message.type === 'private' && message.address === req.params.address) {
+                    delete message._id;
+                    delete message._rev;
+                    let decrypted = yield encryption_1.default.decryptMessage(message.message);
+                    message.message = decrypted;
+                    messages.push(message);
+                }
+            }
+            messages.sort(function (a, b) {
+                return parseFloat(a.timestamp) - parseFloat(b.timestamp);
+            });
+            res.send(messages);
+        }));
+        api.get('/connections', (req, res) => res.send(global['peers']));
+        api.post('/message', (req, res) => __awaiter(this, void 0, void 0, function* () {
             var body = yield utilities_1.default.body(req);
             if (body['body'].message !== undefined && body['body'].receiver !== undefined) {
                 var message = body['body'].message;
