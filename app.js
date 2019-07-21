@@ -77,23 +77,26 @@ function initEngine() {
                     var received = JSON.parse(data.toString());
                     identity_1.default.verifySign(received.pubKey, received.signature, received['message']).then((signature) => __awaiter(this, void 0, void 0, function* () {
                         if (signature === true) {
-                            console.log('Received valid message from ' + received['address'] + '.');
-                            var decrypted = yield encryption_1.default.decryptMessage(received['message']);
-                            if (decrypted !== false) {
-                                messages_1.default.store(received, 'private');
-                                console.log('\x1b[32m%s\x1b[0m', 'Received SAFU message from ' + received['address']);
-                            }
-                            else {
-                                if (received['message'].indexOf('-----BEGIN PUBLIC KEY-----') !== -1) {
-                                    identity_1.default.store({
-                                        address: received['address'],
-                                        pubkey: received['message']
-                                    });
+                            var blocked = yield identity_1.default.isBlocked(received['address']);
+                            if (blocked === false) {
+                                console.log('Received valid message from ' + received['address'] + '.');
+                                var decrypted = yield encryption_1.default.decryptMessage(received['message']);
+                                if (decrypted !== false) {
+                                    messages_1.default.store(received, 'private');
+                                    console.log('\x1b[32m%s\x1b[0m', 'Received SAFU message from ' + received['address']);
                                 }
                                 else {
-                                    if (received['type'] === 'public') {
-                                        console.log('\x1b[32m%s\x1b[0m', 'Received public message from ' + received['address']);
-                                        messages_1.default.store(received, 'public');
+                                    if (received['message'].indexOf('-----BEGIN PUBLIC KEY-----') !== -1) {
+                                        identity_1.default.store({
+                                            address: received['address'],
+                                            pubkey: received['message']
+                                        });
+                                    }
+                                    else {
+                                        if (received['type'] === 'public') {
+                                            console.log('\x1b[32m%s\x1b[0m', 'Received public message from ' + received['address']);
+                                            messages_1.default.store(received, 'public');
+                                        }
                                     }
                                 }
                             }

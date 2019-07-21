@@ -123,7 +123,52 @@ class Api {
                                 _rev: id._rev,
                                 nickname: body['body'].nickname,
                                 address: id.address,
-                                pubkey: id.pubkey
+                                pubkey: id.pubkey,
+                                blocked: id.blocked
+                            });
+                        }
+                        catch (e) {
+                            console.log(e);
+                        }
+                    }
+                }
+                res.send({
+                    success: success
+                });
+            }
+            else {
+                res.send({
+                    error: true,
+                    message: 'You must specify an address first.'
+                });
+            }
+        }));
+        api.post('/contacts/block', (req, res) => __awaiter(this, void 0, void 0, function* () {
+            var body = yield utilities_1.default.body(req);
+            if (body['body'].address !== undefined) {
+                var db = new PouchDB('users');
+                let dbcheck = yield db.allDocs();
+                let success = false;
+                for (var i = 0; i < dbcheck.rows.length; i++) {
+                    var check = dbcheck.rows[i];
+                    var id = yield db.get(check.id);
+                    if (id.address === body['body'].address) {
+                        success = true;
+                        let blocked;
+                        if (id.blocked === false || id.blocked === undefined) {
+                            blocked = true;
+                        }
+                        else {
+                            blocked = false;
+                        }
+                        try {
+                            yield db.put({
+                                _id: id._id,
+                                _rev: id._rev,
+                                nickname: id.nickname,
+                                address: id.address,
+                                pubkey: id.pubkey,
+                                blocked: blocked
                             });
                         }
                         catch (e) {

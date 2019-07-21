@@ -87,6 +87,33 @@ class Identity {
             }));
         });
     }
+    static isBlocked(address) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((response) => __awaiter(this, void 0, void 0, function* () {
+                var db = new PouchDB('users');
+                let dbcheck = yield db.allDocs();
+                if (dbcheck.rows.length === 0) {
+                    response(false);
+                }
+                else {
+                    var found = false;
+                    for (var i = 0; i < dbcheck.rows.length; i++) {
+                        var check = dbcheck.rows[i];
+                        var id = yield db.get(check.id);
+                        if (id.address === address) {
+                            found = id;
+                        }
+                    }
+                    if (found['blocked'] === false || found['blocked'] === undefined) {
+                        response(false);
+                    }
+                    else {
+                        response(true);
+                    }
+                }
+            }));
+        });
+    }
     static create() {
         return __awaiter(this, void 0, void 0, function* () {
             return new Promise((response) => __awaiter(this, void 0, void 0, function* () {

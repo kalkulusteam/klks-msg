@@ -72,6 +72,30 @@ export default class Identity {
             }
         })
     }
+
+    static async isBlocked(address) {
+        return new Promise( async response => {
+            var db = new PouchDB('users')
+            let dbcheck = await db.allDocs()
+            if(dbcheck.rows.length === 0){
+                response(false)
+            }else{
+                var found = false
+                for(var i = 0; i < dbcheck.rows.length; i++){
+                    var check = dbcheck.rows[i]
+                    var id = await db.get(check.id)
+                    if(id.address === address){
+                        found = id
+                    }
+                }
+                if(found['blocked'] === false || found['blocked'] === undefined){
+                    response(false)
+                }else{
+                    response(true)
+                }
+            }
+        })
+    }
     
     static async create() {
         return new Promise( async response => {
