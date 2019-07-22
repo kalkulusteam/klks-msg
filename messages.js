@@ -95,7 +95,7 @@ class Messages {
             console.log(global['relayed']);
             if (global['relayed'].indexOf(message.signature) === -1) {
                 global['relayed'].push(message.signature);
-                Messages.broadcast(message);
+                Messages.broadcast(JSON.stringify(message));
             }
             else {
                 console.log('Message relayed yet.');
