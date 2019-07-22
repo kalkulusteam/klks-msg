@@ -28,6 +28,8 @@ export default class Messages {
                 if(found === false){
                     await db.post(received)
                     console.log('Saved new message.')
+                }else{
+                    console.log('Message '+ message.signature +' is stored yet')
                 }
             }
             response(true)
@@ -71,6 +73,11 @@ export default class Messages {
                 Messages.broadcast(message)
             }
         }
+    }
+
+    static async relayMessage(message){
+        console.log('Relaying received message to peers...')
+        Messages.broadcast(message)
     }
 
 }

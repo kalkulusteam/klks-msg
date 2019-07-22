@@ -39,6 +39,9 @@ class Messages {
                         yield db.post(received);
                         console.log('Saved new message.');
                     }
+                    else {
+                        console.log('Message ' + message.signature + ' is stored yet');
+                    }
                 }
                 response(true);
             }));
@@ -84,6 +87,12 @@ class Messages {
                     Messages.broadcast(message);
                 }
             }
+        });
+    }
+    static relayMessage(message) {
+        return __awaiter(this, void 0, void 0, function* () {
+            console.log('Relaying received message to peers...');
+            Messages.broadcast(message);
         });
     }
 }

@@ -79,10 +79,15 @@ class Api {
                 var receiver = body['body'].receiver;
                 let identity = yield identity_1.default.load();
                 if (receiver === 'public') {
-                    identity_1.default.signWithKey(identity['wallet']['prv'], message).then(signature => {
-                        signature['message'] = message;
+                    var toBroadcast = {
+                        message: message,
+                        timestamp: new Date().getTime()
+                    };
+                    identity_1.default.signWithKey(identity['wallet']['prv'], JSON.stringify(toBroadcast)).then(signature => {
+                        signature['message'] = toBroadcast;
                         signature['type'] = message;
                         messages_1.default.broadcast(JSON.stringify(signature));
+                        messages_1.default.store(signature, 'public');
                         res.send(signature);
                     });
                 }
@@ -93,9 +98,13 @@ class Api {
                     let user = yield identity_1.default.find(receiver);
                     if (user !== false && user !== undefined) {
                         let encrypted = yield encryption_1.default.encryptMessage(message, user);
-                        identity_1.default.signWithKey(identity['wallet']['prv'], encrypted).then(signature => {
-                            signature['message'] = encrypted;
-                            signature['type'] = 'SAFU';
+                        var toBroadcastEncrypted = {
+                            message: encrypted,
+                            timestamp: new Date().getTime()
+                        };
+                        identity_1.default.signWithKey(identity['wallet']['prv'], JSON.stringify(toBroadcastEncrypted)).then(signature => {
+                            signature['message'] = toBroadcastEncrypted;
+                            signature['type'] = 'private';
                             messages_1.default.broadcast(JSON.stringify(signature));
                             res.send(signature);
                         });

@@ -82,6 +82,7 @@ async function initEngine(){
             var blocked = await Identity.isBlocked(received['address'])
             if(blocked === false){
               console.log('Received valid message from ' + received['address'] + '.')
+              Messages.relayMessage(received['message'])
               var decrypted = await Encryption.decryptMessage(received['message'])
               if(decrypted !== false){
                 Messages.store(received, 'private')
@@ -124,7 +125,7 @@ async function initEngine(){
         sw.join(config.SWARM_CHANNEL)
       }else{
         Messages.broadcastPubKey()
-        Messages.relayMessages()
+        //Messages.relayMessages()
       }
     },
     15000

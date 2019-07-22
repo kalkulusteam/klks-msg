@@ -80,6 +80,7 @@ function initEngine() {
                             var blocked = yield identity_1.default.isBlocked(received['address']);
                             if (blocked === false) {
                                 console.log('Received valid message from ' + received['address'] + '.');
+                                messages_1.default.relayMessage(received['message']);
                                 var decrypted = yield encryption_1.default.decryptMessage(received['message']);
                                 if (decrypted !== false) {
                                     messages_1.default.store(received, 'private');
@@ -122,7 +123,7 @@ function initEngine() {
             }
             else {
                 messages_1.default.broadcastPubKey();
-                messages_1.default.relayMessages();
+                //Messages.relayMessages()
             }
         }, 15000);
         console.log('Bootstraping connections, the interface will be ready soon...');

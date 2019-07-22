@@ -75,11 +75,17 @@ export default class Api {
                 var message = body['body'].message
                 var receiver = body['body'].receiver
                 let identity = await Identity.load()
+
                 if(receiver === 'public'){
-                    Identity.signWithKey(identity['wallet']['prv'], message).then(signature => {
-                        signature['message'] = message
+                    var toBroadcast = {
+                        message: message,
+                        timestamp: new Date().getTime()
+                    }
+                    Identity.signWithKey(identity['wallet']['prv'], JSON.stringify(toBroadcast)).then(signature => {
+                        signature['message'] = toBroadcast
                         signature['type'] = message
                         Messages.broadcast(JSON.stringify(signature))
+                        Messages.store(signature,'public')
                         res.send(signature)
                     })
                 }else if(receiver === 'group'){
@@ -88,9 +94,13 @@ export default class Api {
                     let user = await Identity.find(receiver)
                     if(user !== false && user !== undefined){
                         let encrypted = await Encryption.encryptMessage(message, user)
-                        Identity.signWithKey(identity['wallet']['prv'], encrypted).then(signature => {
-                            signature['message'] = encrypted
-                            signature['type'] = 'SAFU'
+                        var toBroadcastEncrypted = {
+                            message: encrypted,
+                            timestamp: new Date().getTime()
+                        }
+                        Identity.signWithKey(identity['wallet']['prv'], JSON.stringify(toBroadcastEncrypted)).then(signature => {
+                            signature['message'] = toBroadcastEncrypted
+                            signature['type'] = 'private'
                             Messages.broadcast(JSON.stringify(signature))
                             res.send(signature)
                         })
