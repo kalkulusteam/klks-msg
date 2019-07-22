@@ -49,4 +49,11 @@ export default class Utilities {
         })
     }
 
+    static connections(){
+        let connections = 0
+        for (let id in global['peers']) {
+           connections ++
+        }
+        return connections
+    }
 }

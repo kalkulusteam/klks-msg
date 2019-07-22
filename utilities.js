@@ -61,6 +61,13 @@ class Utilities {
             }));
         });
     }
+    static connections() {
+        let connections = 0;
+        for (let id in global['peers']) {
+            connections++;
+        }
+        return connections;
+    }
 }
 exports.default = Utilities;
 //# sourceMappingURL=utilities.js.map

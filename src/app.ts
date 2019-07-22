@@ -4,6 +4,7 @@ import Api from './api';
 import Identity from './identity';
 import Encryption from './encryption';
 import Messages from './messages';
+import Utilities from './utilities';
 
 const crypto = require('crypto')
 const Swarm = require('discovery-swarm')
@@ -20,120 +21,117 @@ if(argv.server === undefined){
 
 Api.init()
 
-global['peers'] = {}
-let connSeq = 0
 global['relayed'] = []
-  
-const NodeID = crypto.randomBytes(32)
-console.log('Your Swarm identity: /swarm/klksmsg/' + NodeID.toString('hex'))
-
-const sw = Swarm({
-  id: NodeID,
-  utp: true,
-  tcp: true
-})
-//SWARM
 
 async function initEngine(){
   
   let identity = await Identity.load()
   console.log('Identity loaded: ' + identity['wallet']['pub'])
+  
+  await startSwarm()
 
-  const port = await getPort()
-  sw.listen(port)
-  console.log('Swarm listening to port: ' + port)
-  const swarmchannel = config.SWARM_CHANNEL
-  sw.join(swarmchannel)
-
-  sw.on('connection', (conn, info) => {
-    const seq = connSeq
+  global['sw'].on('connection', (conn, info) => {
+    const seq = global['connseq']
     const peerId = info.id.toString('hex')
-    if (!global['peers'][peerId]) {
-      console.log(`Connected to peer: /swarm/klksmsg/${peerId}`)
-      global['peers'][peerId] = {}
-      Messages.broadcastPubKey()
-    }
-
-    global['peers'][peerId].conn = conn
-    global['peers'][peerId].seq = seq
-    connSeq++
-
-    if (info.initiator) {
-      try {
-        conn.setKeepAlive(true, 600)
-      } catch (exception) {
-        setTimeout(function(){
-          conn.setKeepAlive(true, 600)
-        }, 10000)
+    console.log('New connection with '+ peerId +'!')
+    if(peerId !== global['swarmid'].toString('hex')){
+      if (!global['peers'][peerId]) {
+        console.log(`Connected to peer: /swarm/klksmsg/${peerId}`)
+        global['peers'][peerId] = {}
       }
-    }
 
-    conn.on('data', async data => {
-      try{
-        var received = JSON.parse(data.toString())
-        console.log(received)
-        Identity.verifySign(received.pubKey, received.signature, received['message']).then(async signature => {
-          if(signature === true){
-            var blocked = await Identity.isBlocked(received['address'])
-            if(blocked === false){
-              console.log('Received valid message from ' + received['address'] + '.')
-              Messages.relayMessage(received)
-              var decrypted = await Encryption.decryptMessage(received['message'])
-              if(decrypted !== false){
-                Messages.store(received, 'private')
-                console.log('\x1b[32m%s\x1b[0m', 'Received SAFU message from ' + received['address'])
-              }else{
-                if(received['message'].indexOf('-----BEGIN PUBLIC KEY-----') !== -1){
-                  Identity.store({
-                    address: received['address'],
-                    pubkey: received['message']
-                  })
+      global['peers'][peerId].conn = conn
+      global['peers'][peerId].seq = seq
+      global['connseq']++
+      if (info.initiator) {
+        try {
+          if (typeof conn.setKeepAlive === "function") {
+            conn.setKeepAlive(true, 600)
+          }
+        } catch (exception) {
+          setTimeout(function(){
+            conn.setKeepAlive(true, 600)
+          }, 10000)
+        }
+      }
+
+      conn.on('data', async data => {
+        try{
+          var received = JSON.parse(data.toString())
+          Identity.verifySign(received.pubKey, received.signature, received['message']).then(async signature => {
+            if(signature === true){
+              var blocked = await Identity.isBlocked(received['address'])
+              if(blocked === false){
+                console.log('Received valid message from ' + received['address'] + '.')
+                Messages.relayMessage(received)
+                var decrypted = await Encryption.decryptMessage(received['message'])
+                if(decrypted !== false){
+                  Messages.store(received, 'private')
+                  console.log('\x1b[32m%s\x1b[0m', 'Received SAFU message from ' + received['address'])
                 }else{
-                  if(received['type'] === 'public'){
-                    console.log('\x1b[32m%s\x1b[0m', 'Received public message from ' + received['address'])
-                    Messages.store(received, 'public')
+                  if(received['message'].indexOf('-----BEGIN PUBLIC KEY-----') !== -1){
+                    Identity.store({
+                      address: received['address'],
+                      pubkey: received['message']
+                    })
+                  }else{
+                    if(received['type'] === 'public'){
+                      console.log('\x1b[32m%s\x1b[0m', 'Received public message from ' + received['address'])
+                      Messages.store(received, 'public')
+                    }
                   }
                 }
               }
             }
+          })
+        }catch(e){
+          if(config.DEBUG === 'true'){
+            console.log('Received unsigned data, ignoring.')
           }
-        })
-      }catch(e){
-        if(config.DEBUG === 'true'){
-          console.log('Received unsigned data, ignoring.')
         }
-      }
-    })
+      })
 
-    conn.on('close', () => {
-      if (global['peers'][peerId].seq === seq) {
-        delete global['peers'][peerId]
-      }
-    })
-
+      conn.on('close', () => {
+         delete global['peers'][peerId]
+      })
+    }else{
+      console.log('Trying to connect to yourself.')
+    }
   })
   
   setInterval(
     function (){
-      if(sw.connected === 0){
+      if(Utilities.connections() === 0){
         console.log('No connections, try to connect again.')
-        sw.leave(config.SWARM_CHANNEL)
-        sw.join(config.SWARM_CHANNEL)
+        global['sw'].destroy(function (){
+          startSwarm()
+        })
       }else{
         Messages.broadcastPubKey()
         //Messages.relayMessages()
       }
     },
-    15000
+    30000
   )
-  
-  console.log('Bootstraping connections, the interface will be ready soon...')
-  var connectionReady = setInterval(function(){
-    if(sw.connected > 0){
-      console.log('Interface ready, now you can start messaging.')
-      clearInterval(connectionReady)
-    }
-  },5000)
+}
+
+async function startSwarm(){
+  global['peers'] = {}
+  global['connseq'] = 0
+  global['swarmid'] = crypto.randomBytes(32)
+  console.log('Bootstraping connections, the network will be ready soon...')
+  console.log('Your Swarm identity: /swarm/klksmsg/' + global['swarmid'].toString('hex'))
+  global['sw'] = Swarm({
+    id: global['swarmid'],
+    utp: true,
+    tcp: true
+  })
+
+  const port = await getPort()
+  global['sw'].listen(port)
+  console.log('Swarm listening to port: ' + port)
+  global['sw'].join(config.SWARM_CHANNEL)
+
 }
 
 initEngine()

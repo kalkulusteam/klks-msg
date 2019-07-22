@@ -23,8 +23,8 @@ class Messages {
                 received.timestamp = d.getTime();
                 received.type = type;
                 if (dbcheck.rows.length === 0) {
+                    console.log('Saving new message to local database...');
                     yield db.post(received);
-                    console.log('Saved new message.');
                 }
                 else {
                     var found = false;
@@ -92,13 +92,9 @@ class Messages {
     static relayMessage(message) {
         return __awaiter(this, void 0, void 0, function* () {
             console.log('Relaying message to peers...');
-            console.log(global['relayed']);
             if (global['relayed'].indexOf(message.signature) === -1) {
                 global['relayed'].push(message.signature);
                 Messages.broadcast(JSON.stringify(message));
-            }
-            else {
-                console.log('Message relayed yet.');
             }
         });
     }

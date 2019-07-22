@@ -71,7 +71,24 @@ class Api {
             });
             res.send(messages);
         }));
-        api.get('/connections', (req, res) => res.send(global['peers']));
+        api.get('/connections', (req, res) => {
+            let connections = utilities_1.default.connections();
+            if (connections > 0) {
+                res.send({
+                    connected: true,
+                    connections: connections
+                });
+            }
+            else {
+                res.send({
+                    connected: false
+                });
+            }
+        });
+        api.get('/peers', (req, res) => {
+            let peers = global['peers'];
+            res.send(peers);
+        });
         api.post('/message', (req, res) => __awaiter(this, void 0, void 0, function* () {
             var body = yield utilities_1.default.body(req);
             if (body['body'].message !== undefined && body['body'].receiver !== undefined) {

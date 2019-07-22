@@ -14,8 +14,8 @@ export default class Messages {
             received.type = type
 
             if(dbcheck.rows.length === 0){
+                console.log('Saving new message to local database...')
                 await db.post(received)
-                console.log('Saved new message.')
             }else{
                 var found = false
                 for(var i = 0; i < dbcheck.rows.length; i++){
@@ -77,12 +77,9 @@ export default class Messages {
 
     static async relayMessage(message){
         console.log('Relaying message to peers...')
-        console.log(global['relayed'])
         if(global['relayed'].indexOf(message.signature) === -1){
             global['relayed'].push(message.signature)
             Messages.broadcast(JSON.stringify(message))
-        }else{
-            console.log('Message relayed yet.')
         }
     }
 
