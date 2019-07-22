@@ -71,6 +71,7 @@ async function initEngine(){
     conn.on('data', async data => {
       try{
         var received = JSON.parse(data.toString())
+        console.log(received)
         Identity.verifySign(received.pubKey, received.signature, received['message']).then(async signature => {
           if(signature === true){
             var blocked = await Identity.isBlocked(received['address'])

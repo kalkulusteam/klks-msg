@@ -70,6 +70,7 @@ function initEngine() {
             conn.on('data', (data) => __awaiter(this, void 0, void 0, function* () {
                 try {
                     var received = JSON.parse(data.toString());
+                    console.log(received);
                     identity_1.default.verifySign(received.pubKey, received.signature, received['message']).then((signature) => __awaiter(this, void 0, void 0, function* () {
                         if (signature === true) {
                             var blocked = yield identity_1.default.isBlocked(received['address']);
