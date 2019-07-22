@@ -105,8 +105,9 @@ function initEngine() {
         });
         setInterval(function () {
             if (utilities_1.default.connections() === 0) {
-                console.log('No connections, try to connect again.');
+                console.log('No connections.');
                 if (argv.server === undefined) {
+                    console.log('Try to connect again.');
                     global['sw'].destroy(function () {
                         startSwarm();
                     });
