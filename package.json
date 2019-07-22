@@ -31,8 +31,7 @@
     "pouchdb": "^7.1.1",
     "pouchdb-find": "^7.1.1",
     "secp256k1": "^3.7.1",
-    "secure-random": "^1.1.2",
-    "webtorrent": "^0.105.0"
+    "secure-random": "^1.1.2"
   },
   "devDependencies": {
     "electromon": "^1.0.10",
