@@ -77,15 +77,17 @@ export default class Api {
                 let identity = await Identity.load()
 
                 if(receiver === 'public'){
+                
                     var toBroadcast = {
                         message: message,
                         timestamp: new Date().getTime()
                     }
+                    
                     Identity.signWithKey(identity['wallet']['prv'], JSON.stringify(toBroadcast)).then(signature => {
-                        signature['message'] = toBroadcast
-                        signature['type'] = message
+                        signature['message'] = JSON.stringify(toBroadcast)
+                        signature['type'] = 'public'
                         Messages.broadcast(JSON.stringify(signature))
-                        Messages.store(signature,'public')
+                        //Messages.store(signature,'public')
                         res.send(signature)
                     })
                 }else if(receiver === 'group'){
@@ -99,7 +101,7 @@ export default class Api {
                             timestamp: new Date().getTime()
                         }
                         Identity.signWithKey(identity['wallet']['prv'], JSON.stringify(toBroadcastEncrypted)).then(signature => {
-                            signature['message'] = toBroadcastEncrypted
+                            signature['message'] = JSON.stringify(toBroadcastEncrypted)
                             signature['type'] = 'private'
                             Messages.broadcast(JSON.stringify(signature))
                             res.send(signature)

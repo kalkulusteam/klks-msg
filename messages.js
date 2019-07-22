@@ -91,8 +91,11 @@ class Messages {
     }
     static relayMessage(message) {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log('Relaying received message to peers...');
-            Messages.broadcast(message);
+            if (global['relayed'].indexOf(message.signature) === -1) {
+                console.log('Relaying new message to peers...');
+                global['relayed'].push(message.signature);
+                Messages.broadcast(message);
+            }
         });
     }
 }

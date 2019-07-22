@@ -82,7 +82,7 @@ async function initEngine(){
             var blocked = await Identity.isBlocked(received['address'])
             if(blocked === false){
               console.log('Received valid message from ' + received['address'] + '.')
-              Messages.relayMessage(received['message'])
+              Messages.relayMessage(received)
               var decrypted = await Encryption.decryptMessage(received['message'])
               if(decrypted !== false){
                 Messages.store(received, 'private')
@@ -121,8 +121,9 @@ async function initEngine(){
   setInterval(
     function (){
       if(sw.connected === 0){
-        console.log('No connections, try to connect again..')
-        sw.join(config.SWARM_CHANNEL)
+        console.log('No connections, restarting engine.')
+        sw.close()
+        initEngine()
       }else{
         Messages.broadcastPubKey()
         //Messages.relayMessages()

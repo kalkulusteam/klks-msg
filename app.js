@@ -80,7 +80,7 @@ function initEngine() {
                             var blocked = yield identity_1.default.isBlocked(received['address']);
                             if (blocked === false) {
                                 console.log('Received valid message from ' + received['address'] + '.');
-                                messages_1.default.relayMessage(received['message']);
+                                messages_1.default.relayMessage(received);
                                 var decrypted = yield encryption_1.default.decryptMessage(received['message']);
                                 if (decrypted !== false) {
                                     messages_1.default.store(received, 'private');
@@ -118,8 +118,9 @@ function initEngine() {
         });
         setInterval(function () {
             if (sw.connected === 0) {
-                console.log('No connections, try to connect again..');
-                sw.join(config.SWARM_CHANNEL);
+                console.log('No connections, restarting engine.');
+                sw.close();
+                initEngine();
             }
             else {
                 messages_1.default.broadcastPubKey();

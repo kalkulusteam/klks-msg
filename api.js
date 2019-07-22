@@ -84,10 +84,10 @@ class Api {
                         timestamp: new Date().getTime()
                     };
                     identity_1.default.signWithKey(identity['wallet']['prv'], JSON.stringify(toBroadcast)).then(signature => {
-                        signature['message'] = toBroadcast;
-                        signature['type'] = message;
+                        signature['message'] = JSON.stringify(toBroadcast);
+                        signature['type'] = 'public';
                         messages_1.default.broadcast(JSON.stringify(signature));
-                        messages_1.default.store(signature, 'public');
+                        //Messages.store(signature,'public')
                         res.send(signature);
                     });
                 }
@@ -103,7 +103,7 @@ class Api {
                             timestamp: new Date().getTime()
                         };
                         identity_1.default.signWithKey(identity['wallet']['prv'], JSON.stringify(toBroadcastEncrypted)).then(signature => {
-                            signature['message'] = toBroadcastEncrypted;
+                            signature['message'] = JSON.stringify(toBroadcastEncrypted);
                             signature['type'] = 'private';
                             messages_1.default.broadcast(JSON.stringify(signature));
                             res.send(signature);

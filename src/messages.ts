@@ -76,8 +76,11 @@ export default class Messages {
     }
 
     static async relayMessage(message){
-        console.log('Relaying received message to peers...')
-        Messages.broadcast(message)
+        if(global['relayed'].indexOf(message.signature) === -1){
+            console.log('Relaying new message to peers...')
+            global['relayed'].push(message.signature)
+            Messages.broadcast(message)
+        }
     }
 
 }
