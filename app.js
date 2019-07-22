@@ -46,11 +46,6 @@ function initEngine() {
         console.log('Swarm listening to port: ' + port);
         const swarmchannel = config.SWARM_CHANNEL;
         sw.join(swarmchannel);
-        sw.on('connect-failed', function (peer, details) {
-            if (config.DEBUG === 'TRUE') {
-                console.log('CONNECTION ERROR', peer, details);
-            }
-        });
         sw.on('connection', (conn, info) => {
             const seq = connSeq;
             const peerId = info.id.toString('hex');
@@ -118,9 +113,9 @@ function initEngine() {
         });
         setInterval(function () {
             if (sw.connected === 0) {
-                console.log('No connections, restarting engine.');
-                sw.close();
-                initEngine();
+                console.log('No connections, try to connect again.');
+                sw.leave(config.SWARM_CHANNEL);
+                sw.join(config.SWARM_CHANNEL);
             }
             else {
                 messages_1.default.broadcastPubKey();
