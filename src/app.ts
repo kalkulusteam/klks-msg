@@ -103,9 +103,11 @@ async function initEngine(){
     function (){
       if(Utilities.connections() === 0){
         console.log('No connections, try to connect again.')
-        global['sw'].destroy(function (){
-          startSwarm()
-        })
+        if(argv.server === undefined){
+          global['sw'].destroy(function (){
+            startSwarm()
+          })
+        } 
       }else{
         Messages.broadcastPubKey()
         //Messages.relayMessages()

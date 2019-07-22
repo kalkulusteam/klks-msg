@@ -106,9 +106,11 @@ function initEngine() {
         setInterval(function () {
             if (utilities_1.default.connections() === 0) {
                 console.log('No connections, try to connect again.');
-                global['sw'].destroy(function () {
-                    startSwarm();
-                });
+                if (argv.server === undefined) {
+                    global['sw'].destroy(function () {
+                        startSwarm();
+                    });
+                }
             }
             else {
                 messages_1.default.broadcastPubKey();
