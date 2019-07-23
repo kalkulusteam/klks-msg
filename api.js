@@ -43,6 +43,7 @@ class Api {
                 if (message.type === 'public') {
                     delete message._id;
                     delete message._rev;
+                    message.message = JSON.parse(message.message);
                     messages.push(message);
                 }
             }
