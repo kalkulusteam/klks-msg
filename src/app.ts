@@ -43,17 +43,19 @@ async function initEngine(){
       global['peers'][peerId].conn = conn
       global['peers'][peerId].seq = seq
       global['connseq']++
-      if (info.initiator) {
-        try {
-          if (typeof conn.setKeepAlive === "function") {
-            conn.setKeepAlive(true, 999999999999999999999)
+      setInterval(function(){
+        if (info.initiator) {
+          try {
+            if (typeof conn.setKeepAlive === "function") {
+              conn.setKeepAlive(true, 99999999999999999999999999999)
+            }
+          } catch (exception) {
+            setTimeout(function(){
+              conn.setKeepAlive(true, 99999999999999999999999999999)
+            }, 10000)
           }
-        } catch (exception) {
-          setTimeout(function(){
-            conn.setKeepAlive(true, 999999999999999999999)
-          }, 10000)
         }
-      }
+      }, 30000)
 
       conn.on('data', async data => {
         try{
