@@ -11,6 +11,7 @@ global['broadcasted'] = {
     nodes: [],
     clients: []
 }
+global['feed'] = {}
 
 const config = require('./config.json')
 import Encryption from './encryption'
@@ -123,19 +124,34 @@ export default class Messages {
                 for(var k in global['connected']){
                     let connected = global['connected'][k]
                     if(connected === true){
-                        if(global['broadcasted']['nodes'].indexOf(k) === -1){
-                            global['broadcasted']['nodes'].push(k)
+                        if(!global['feed'][message.signature]){
+                            global['feed'][message.signature] = {
+                                clients: {},
+                                nodes: {}
+                            }
+                        }
+                        if(!global['feed'][message.signature]['nodes']){
+                            global['feed'][message.signature]['nodes'] = []
+                        }
+                        if(global['feed'][message.signature]['nodes'].indexOf(k) === -1){
+                            global['feed'][message.signature]['nodes'].push(k)
                             Messages.broadcast('message', message, '', k)
                         }
                     }
                     global['io'].server.sockets.clients((error, clients) => {
                         for(var k in clients){
                             var client = clients[k]
-                            if(!global['broadcasted']['clients'][client]){
-                                global['broadcasted']['clients'][client] = []
+                            if(!global['feed'][message.signature]){
+                                global['feed'][message.signature] = {
+                                    clients: {},
+                                    nodes: {}
+                                }
                             }
-                            if(global['broadcasted']['clients'][client].indexOf(message.signature) === -1){
-                                global['broadcasted']['clients'][client].push(message.signature)
+                            if(!global['feed'][message.signature]['clients'][client]){
+                                global['feed'][message.signature]['clients'][client] = []
+                            }
+                            if(global['feed'][message.signature]['clients'][client].indexOf(message.signature) === -1){
+                                global['feed'][message.signature]['clients'][client].push(message.signature)
                                 Messages.broadcast('message', message, client)
                             }
                         }
