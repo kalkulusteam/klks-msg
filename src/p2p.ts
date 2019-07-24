@@ -20,29 +20,29 @@ var argv = require('minimist')(process.argv.slice(2))
 export default class P2P {
     static async init() {
         return new Promise( async response => {
-            Utilities.log('Starting P2P client.')
+            console.log('Starting P2P client.')
                         
             let identity = await Identity.load()
-            Utilities.log('Identity loaded: ' + identity['wallet']['pub'])
+            console.log('Identity loaded: ' + identity['wallet']['pub'])
 
             let bootstrap = config.BOOTSTRAP_NODES
             for(var k in bootstrap){
                 if(!global['clients'][bootstrap[k]]){
                     //INIT CONNECTION
-                    Utilities.log('Bootstrap connection to ' + bootstrap[k])
+                    console.log('Bootstrap connection to ' + bootstrap[k])
                     let lookupURL = bootstrap[k].replace('http://','').replace(':' + config.P2P_PORT,'')
                     let ip = await this.lookup(lookupURL)
                     let publicip = await publicIp.v4()
                     let node = bootstrap[k]
-                    
+
                     if(ip !== publicip){
                         global['nodes'][node] = require('socket.io-client')(node, {reconnect: true})
                         global['nodes'][node].on('connect', function () {
-                            Utilities.log('Connected to peer: ' + global['nodes'][node].io.uri)
+                            console.log('Connected to peer: ' + global['nodes'][node].io.uri)
                             global['connected'][node] = true
                         })
                         global['nodes'][node].on('disconnect', function () {
-                            Utilities.log('Disconnected from peer: ' + global['nodes'][node].io.uri)
+                            console.log('Disconnected from peer: ' + global['nodes'][node].io.uri)
                             global['connected'][node] = false
                         })
     

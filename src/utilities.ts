@@ -52,8 +52,8 @@ export default class Utilities {
     }
 
     static log(toLog){
-        console.log(toLog)
         if(config.DEBUG === true){
+            console.log(toLog)
             var d = new Date().toLocaleString();
             fs.appendFileSync('log', '[' + d + '] ' + toLog + '\n');
         }
