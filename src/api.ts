@@ -9,13 +9,14 @@ import Messages from './messages'
 import Utilities from './utilities'
 const PouchDB = require('pouchdb')
 PouchDB.plugin(require('pouchdb-find'))
+const getPort = require('get-port')
 
 var messages = []
 var relayed = []
 
 export default class Api {
-    static init() {
-        var frontendPort = 11673; //TEST PORT
+    static async init() {
+        let apiport = await getPort({port: config.API_PORT})
         api.get('/avatar/:hash', (req, res) => {
             var data = new Identicon(req.params.hash, 420).toString();
             var img = Buffer.from(data, 'base64');
@@ -70,22 +71,8 @@ export default class Api {
         })
 
         api.get('/connections', (req, res) => {
-            let connections = Utilities.connections()
-            if(connections > 0){
-                res.send({
-                    connected: true,
-                    connections: connections
-                })
-            }else{
-                res.send({
-                    connected: false
-                })
-            }
-        })
-
-        api.get('/peers', (req, res) => {
-            let peers = global['peers']
-            res.send(peers)
+            let connections = global['connected']
+            res.send(connections)
         })
 
         api.post('/message', async (req,res) => {
@@ -105,7 +92,7 @@ export default class Api {
                     Identity.signWithKey(identity['wallet']['prv'], JSON.stringify(toBroadcast)).then(signature => {
                         signature['message'] = JSON.stringify(toBroadcast)
                         signature['type'] = 'public'
-                        Messages.broadcast(JSON.stringify(signature))
+                        Messages.broadcast('message',JSON.stringify(signature))
                         //Messages.store(signature,'public')
                         res.send(signature)
                     })
@@ -122,7 +109,7 @@ export default class Api {
                         Identity.signWithKey(identity['wallet']['prv'], JSON.stringify(toBroadcastEncrypted)).then(signature => {
                             signature['message'] = JSON.stringify(toBroadcastEncrypted)
                             signature['type'] = 'private'
-                            Messages.broadcast(JSON.stringify(signature))
+                            Messages.broadcast('message',JSON.stringify(signature))
                             res.send(signature)
                         })
                     }else{
@@ -230,6 +217,6 @@ export default class Api {
             }
         })
 
-        api.listen(frontendPort, () => console.log(`Engine listening on port ${frontendPort}!`))
+        api.listen(apiport, () => console.log('Api listening on port ' + apiport))
     }
 }

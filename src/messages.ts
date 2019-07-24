@@ -1,6 +1,9 @@
 const PouchDB = require('pouchdb')
 PouchDB.plugin(require('pouchdb-find'))
 import Identity from './identity'
+global['relayed'] = []
+const config = require('./config.json')
+import Encryption from './encryption'
 
 export default class Messages {
     static async store(received, type) {
@@ -36,10 +39,10 @@ export default class Messages {
         })
     }
 
-    static async broadcast(message) {
+    static async broadcast(protocol, message) {
         //console.log('Broadcasting to network..')
-        for (let id in global['peers']) {
-            global['peers'][id].conn.write(message)
+        for (let id in global['nodes']) {
+            global['nodes'][id].emit(protocol, message)
         }
         //console.log('Broadcast end.')
     }
@@ -51,7 +54,7 @@ export default class Messages {
         var message = publicKey
         Identity.signWithKey(identity['wallet']['prv'], message).then(signature => {
             signature['message'] = message
-            Messages.broadcast(JSON.stringify(signature))
+            Messages.broadcast('pubkey', JSON.stringify(signature))
         })
     }
     
@@ -70,7 +73,7 @@ export default class Messages {
                 delete message._rev
                 delete message.timestamp
                 delete message.received_at
-                Messages.broadcast(message)
+                Messages.broadcast('message',message)
             }
         }
     }
@@ -79,8 +82,47 @@ export default class Messages {
         console.log('Relaying message to peers...')
         if(global['relayed'].indexOf(message.signature) === -1){
             global['relayed'].push(message.signature)
-            Messages.broadcast(JSON.stringify(message))
+            Messages.broadcast('message',JSON.stringify(message))
         }
+    }
+
+    static async relayPubkey(key){
+        console.log('Relaying pubkey to peers...')
+        Messages.broadcast('pubkey', key)
+    }
+
+    static async processMessage(protocol, data){
+        try{
+            var received = JSON.parse(data.toString())
+            Identity.verifySign(received.pubKey, received.signature, received['message']).then(async signature => {
+              if(signature === true){
+                var blocked = await Identity.isBlocked(received['address'])
+                if(blocked === false){
+                  console.log('Received valid message from ' + received['address'] + '.')
+                  Messages.relayMessage(received)
+                  if(protocol === 'pubkey'){
+                    Identity.store({
+                        address: received['address'],
+                        pubkey: received['message']
+                    })
+                  }else if(protocol === 'message'){
+                    var decrypted = await Encryption.decryptMessage(received['message'])
+                    if(decrypted !== false){
+                        Messages.store(received, 'private')
+                        console.log('\x1b[32m%s\x1b[0m', 'Received SAFU message from ' + received['address'])
+                    }else if(received['type'] === 'public'){
+                        console.log('\x1b[32m%s\x1b[0m', 'Received public message from ' + received['address'])
+                        Messages.store(received, 'public')
+                    }
+                  }
+                }
+              }
+            })
+          }catch(e){
+            if(config.DEBUG === true){
+              console.log('Received unsigned data, ignoring.')
+            }
+          }
     }
 
 }

@@ -11,6 +11,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const PouchDB = require('pouchdb');
 PouchDB.plugin(require('pouchdb-find'));
 const identity_1 = require("./identity");
+global['relayed'] = [];
+const config = require('./config.json');
+const encryption_1 = require("./encryption");
 class Messages {
     static store(received, type) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -47,11 +50,11 @@ class Messages {
             }));
         });
     }
-    static broadcast(message) {
+    static broadcast(protocol, message) {
         return __awaiter(this, void 0, void 0, function* () {
             //console.log('Broadcasting to network..')
-            for (let id in global['peers']) {
-                global['peers'][id].conn.write(message);
+            for (let id in global['nodes']) {
+                global['nodes'][id].emit(protocol, message);
             }
             //console.log('Broadcast end.')
         });
@@ -64,7 +67,7 @@ class Messages {
             var message = publicKey;
             identity_1.default.signWithKey(identity['wallet']['prv'], message).then(signature => {
                 signature['message'] = message;
-                Messages.broadcast(JSON.stringify(signature));
+                Messages.broadcast('pubkey', JSON.stringify(signature));
             });
         });
     }
@@ -84,7 +87,7 @@ class Messages {
                     delete message._rev;
                     delete message.timestamp;
                     delete message.received_at;
-                    Messages.broadcast(message);
+                    Messages.broadcast('message', message);
                 }
             }
         });
@@ -94,7 +97,51 @@ class Messages {
             console.log('Relaying message to peers...');
             if (global['relayed'].indexOf(message.signature) === -1) {
                 global['relayed'].push(message.signature);
-                Messages.broadcast(JSON.stringify(message));
+                Messages.broadcast('message', JSON.stringify(message));
+            }
+        });
+    }
+    static relayPubkey(key) {
+        return __awaiter(this, void 0, void 0, function* () {
+            console.log('Relaying pubkey to peers...');
+            Messages.broadcast('pubkey', key);
+        });
+    }
+    static processMessage(protocol, data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                var received = JSON.parse(data.toString());
+                identity_1.default.verifySign(received.pubKey, received.signature, received['message']).then((signature) => __awaiter(this, void 0, void 0, function* () {
+                    if (signature === true) {
+                        var blocked = yield identity_1.default.isBlocked(received['address']);
+                        if (blocked === false) {
+                            console.log('Received valid message from ' + received['address'] + '.');
+                            Messages.relayMessage(received);
+                            if (protocol === 'pubkey') {
+                                identity_1.default.store({
+                                    address: received['address'],
+                                    pubkey: received['message']
+                                });
+                            }
+                            else if (protocol === 'message') {
+                                var decrypted = yield encryption_1.default.decryptMessage(received['message']);
+                                if (decrypted !== false) {
+                                    Messages.store(received, 'private');
+                                    console.log('\x1b[32m%s\x1b[0m', 'Received SAFU message from ' + received['address']);
+                                }
+                                else if (received['type'] === 'public') {
+                                    console.log('\x1b[32m%s\x1b[0m', 'Received public message from ' + received['address']);
+                                    Messages.store(received, 'public');
+                                }
+                            }
+                        }
+                    }
+                }));
+            }
+            catch (e) {
+                if (config.DEBUG === true) {
+                    console.log('Received unsigned data, ignoring.');
+                }
             }
         });
     }

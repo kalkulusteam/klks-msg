@@ -1,4 +1,8 @@
 {
-    "SWARM_CHANNEL": "KLKSMSG",
-    "SERVER_MODE": false
+    "DEBUG": true,
+    "P2P_PORT": 55576,
+    "API_PORT": 11673,
+    "BOOTSTRAP_NODES": [
+        "http://ipfs.kalkul.us:55576"
+    ]
 }

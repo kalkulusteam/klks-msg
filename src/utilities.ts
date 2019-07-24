@@ -1,6 +1,8 @@
 const getPort = require('get-port')
 const isPortAvailable = require('is-port-available')
 var formidable = require('formidable')
+const fs = require('fs')
+const config = require('./config.json')
 
 export default class Utilities {
 
@@ -49,11 +51,11 @@ export default class Utilities {
         })
     }
 
-    static connections(){
-        let connections = 0
-        for (let id in global['peers']) {
-           connections ++
+    static log(toLog){
+        console.log(toLog)
+        if(config.DEBUG === true){
+            var d = new Date().toLocaleString();
+            fs.appendFileSync('log', '[' + d + '] ' + toLog + '\n');
         }
-        return connections
     }
 }
