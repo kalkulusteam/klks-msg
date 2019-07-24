@@ -84,7 +84,7 @@ class P2P {
                 //BACKGROUND TASKS
                 setInterval(function () {
                     messages_1.default.broadcastPubKey();
-                    //Messages.relayMessages()
+                    messages_1.default.broadcastMessages();
                 }, 30000);
                 response(true);
             }));

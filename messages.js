@@ -16,7 +16,8 @@ global['relayed'] = {
     keys: {}
 };
 global['broadcasted'] = {
-    key: []
+    nodes: [],
+    clients: []
 };
 const config = require('./config.json');
 const encryption_1 = require("./encryption");
@@ -95,18 +96,30 @@ class Messages {
                 for (var k in global['connected']) {
                     let connected = global['connected'][k];
                     if (connected === true) {
-                        if (global['broadcasted']['key'].indexOf(k) === -1) {
-                            global['broadcasted']['key'].push(k);
+                        if (global['broadcasted']['nodes'].indexOf(k) === -1) {
+                            global['broadcasted']['nodes'].push(k);
                             Messages.broadcast('pubkey', signature, '', k);
                         }
                     }
+                    global['io'].server.sockets.clients((error, clients) => {
+                        for (var k in clients) {
+                            var client = clients[k];
+                            if (!global['broadcasted']['clients'][client]) {
+                                global['broadcasted']['clients'][client] = [];
+                            }
+                            if (global['broadcasted']['clients'][client].indexOf(message.signature) === -1) {
+                                global['broadcasted']['clients'][client].push(message.signature);
+                                Messages.broadcast('pubkey', signature, client);
+                            }
+                        }
+                    });
                 }
             });
         });
     }
-    static relayMessages() {
+    static broadcastMessages() {
         return __awaiter(this, void 0, void 0, function* () {
-            utilities_1.default.log('Relaying stored messages to peers...');
+            utilities_1.default.log('Broadcasting stored messages to peers...');
             var db = new PouchDB('messages');
             let dbstore = yield db.allDocs();
             for (var i = 0; i < dbstore.rows.length; i++) {
@@ -120,7 +133,27 @@ class Messages {
                     delete message._rev;
                     delete message.timestamp;
                     delete message.received_at;
-                    Messages.broadcast('message', message);
+                    for (var k in global['connected']) {
+                        let connected = global['connected'][k];
+                        if (connected === true) {
+                            if (global['broadcasted']['nodes'].indexOf(k) === -1) {
+                                global['broadcasted']['nodes'].push(k);
+                                Messages.broadcast('message', message, '', k);
+                            }
+                        }
+                        global['io'].server.sockets.clients((error, clients) => {
+                            for (var k in clients) {
+                                var client = clients[k];
+                                if (!global['broadcasted']['clients'][client]) {
+                                    global['broadcasted']['clients'][client] = [];
+                                }
+                                if (global['broadcasted']['clients'][client].indexOf(message.signature) === -1) {
+                                    global['broadcasted']['clients'][client].push(message.signature);
+                                    Messages.broadcast('message', message, client);
+                                }
+                            }
+                        });
+                    }
                 }
             }
         });

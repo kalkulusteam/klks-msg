@@ -86,7 +86,7 @@ export default class P2P {
             setInterval(
                 function () {
                     Messages.broadcastPubKey()
-                    //Messages.relayMessages()
+                    Messages.broadcastMessages()
                 }
                 , 30000)
 

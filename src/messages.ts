@@ -8,7 +8,8 @@ global['relayed'] = {
 }
 
 global['broadcasted'] = {
-    key: []
+    nodes: [],
+    clients: []
 }
 
 const config = require('./config.json')
@@ -83,17 +84,29 @@ export default class Messages {
             for(var k in global['connected']){
                 let connected = global['connected'][k]
                 if(connected === true){
-                    if(global['broadcasted']['key'].indexOf(k) === -1){
-                        global['broadcasted']['key'].push(k)
+                    if(global['broadcasted']['nodes'].indexOf(k) === -1){
+                        global['broadcasted']['nodes'].push(k)
                         Messages.broadcast('pubkey', signature, '', k)
                     }
                 }
+                global['io'].server.sockets.clients((error, clients) => {
+                    for(var k in clients){
+                        var client = clients[k]
+                        if(!global['broadcasted']['clients'][client]){
+                            global['broadcasted']['clients'][client] = []
+                        }
+                        if(global['broadcasted']['clients'][client].indexOf(message.signature) === -1){
+                            global['broadcasted']['clients'][client].push(message.signature)
+                            Messages.broadcast('pubkey', signature, client)
+                        }
+                    }
+                })
             }
         })
     }
     
-    static async relayMessages(){
-        Utilities.log('Relaying stored messages to peers...')
+    static async broadcastMessages(){
+        Utilities.log('Broadcasting stored messages to peers...')
         var db = new PouchDB('messages')
         let dbstore = await db.allDocs()
         for(var i = 0; i < dbstore.rows.length; i++){
@@ -107,7 +120,27 @@ export default class Messages {
                 delete message._rev
                 delete message.timestamp
                 delete message.received_at
-                Messages.broadcast('message', message)
+                for(var k in global['connected']){
+                    let connected = global['connected'][k]
+                    if(connected === true){
+                        if(global['broadcasted']['nodes'].indexOf(k) === -1){
+                            global['broadcasted']['nodes'].push(k)
+                            Messages.broadcast('message', message, '', k)
+                        }
+                    }
+                    global['io'].server.sockets.clients((error, clients) => {
+                        for(var k in clients){
+                            var client = clients[k]
+                            if(!global['broadcasted']['clients'][client]){
+                                global['broadcasted']['clients'][client] = []
+                            }
+                            if(global['broadcasted']['clients'][client].indexOf(message.signature) === -1){
+                                global['broadcasted']['clients'][client].push(message.signature)
+                                Messages.broadcast('message', message, client)
+                            }
+                        }
+                    })
+                }
             }
         }
     }
