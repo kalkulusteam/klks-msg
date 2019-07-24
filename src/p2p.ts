@@ -10,6 +10,8 @@ let io = {server: null, client: null}
 io.server = require('socket.io')(server)
 io.client = require('socket.io-client')
 const getPort = require('get-port')
+var dns = require('dns')
+const publicIp = require('public-ip');
 
 global['nodes'] = {}
 global['connected'] = {}
@@ -28,23 +30,29 @@ export default class P2P {
                 if(!global['nodes'][bootstrap[k]]){
                     //INIT CONNECTION
                     Utilities.log('Init bootstrap connection to ' + bootstrap[k])
-                    global['nodes'][bootstrap[k]] = io.client.connect(bootstrap[k], {reconnect: true})
-                    global['nodes'][bootstrap[k]].on('connect', function () {
-                        Utilities.log('Connected to peer: ' + global['nodes'][bootstrap[k]].io.uri)
-                        global['connected'][bootstrap[k]] = true
+                    let lookupURL = bootstrap[k].replace('http://','').replace(':' + config.P2P_PORT,'')
+                    dns.lookup(lookupURL, async function onLookup(err, ip, family) {
+                        let publicip = await publicIp.v4()
+                        if(ip !== publicip){
+                            global['nodes'][bootstrap[k]] = io.client.connect(bootstrap[k], {reconnect: true})
+                            global['nodes'][bootstrap[k]].on('connect', function () {
+                                Utilities.log('Connected to peer: ' + global['nodes'][bootstrap[k]].io.uri)
+                                global['connected'][bootstrap[k]] = true
+                            })
+                            global['nodes'][bootstrap[k]].on('disconnect', function () {
+                                Utilities.log('Disconnected from peer: ' + global['nodes'][bootstrap[k]].io.uri)
+                                global['connected'][bootstrap[k]] = false
+                            })
+        
+                            //PROTOCOLS
+                            global['nodes'][bootstrap[k]].on('message', function (data) {
+                            Messages.processMessage('message', data)
+                            })
+                            global['nodes'][bootstrap[k]].on('pubkey', function (data) {
+                                Messages.processMessage('pubkey', data)
+                            })
+                        }
                     })
-                    global['nodes'][bootstrap[k]].on('disconnect', function () {
-                        Utilities.log('Disconnected from peer: ' + global['nodes'][bootstrap[k]].io.uri)
-                        global['connected'][bootstrap[k]] = false
-                    })
-
-                    //PROTOCOLS
-                    global['nodes'][bootstrap[k]].on('message', function (data) {
-                       Messages.processMessage('message', data)
-                    })
-                    global['nodes'][bootstrap[k]].on('pubkey', function (data) {
-                        Messages.processMessage('pubkey', data)
-                     })
                 }
             }
 
@@ -64,7 +72,7 @@ export default class P2P {
                     })
 
                     socket.on('pubkey', function (data) {
-                        Utilities.log('Relaying pubkey to peers');
+                        Utilities.log('Relaying pubkey to peers...');
                         if(config.DEBUG === true){
                             console.log(data)
                         }

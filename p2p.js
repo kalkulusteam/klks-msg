@@ -18,6 +18,8 @@ let io = { server: null, client: null };
 io.server = require('socket.io')(server);
 io.client = require('socket.io-client');
 const getPort = require('get-port');
+var dns = require('dns');
+const publicIp = require('public-ip');
 global['nodes'] = {};
 global['connected'] = {};
 var argv = require('minimist')(process.argv.slice(2));
@@ -33,21 +35,29 @@ class P2P {
                     if (!global['nodes'][bootstrap[k]]) {
                         //INIT CONNECTION
                         utilities_1.default.log('Init bootstrap connection to ' + bootstrap[k]);
-                        global['nodes'][bootstrap[k]] = io.client.connect(bootstrap[k], { reconnect: true });
-                        global['nodes'][bootstrap[k]].on('connect', function () {
-                            utilities_1.default.log('Connected to peer: ' + global['nodes'][bootstrap[k]].io.uri);
-                            global['connected'][bootstrap[k]] = true;
-                        });
-                        global['nodes'][bootstrap[k]].on('disconnect', function () {
-                            utilities_1.default.log('Disconnected from peer: ' + global['nodes'][bootstrap[k]].io.uri);
-                            global['connected'][bootstrap[k]] = false;
-                        });
-                        //PROTOCOLS
-                        global['nodes'][bootstrap[k]].on('message', function (data) {
-                            messages_1.default.processMessage('message', data);
-                        });
-                        global['nodes'][bootstrap[k]].on('pubkey', function (data) {
-                            messages_1.default.processMessage('pubkey', data);
+                        let lookupURL = bootstrap[k].replace('http://', '').replace(':' + config.P2P_PORT, '');
+                        dns.lookup(lookupURL, function onLookup(err, ip, family) {
+                            return __awaiter(this, void 0, void 0, function* () {
+                                let publicip = yield publicIp.v4();
+                                if (ip !== publicip) {
+                                    global['nodes'][bootstrap[k]] = io.client.connect(bootstrap[k], { reconnect: true });
+                                    global['nodes'][bootstrap[k]].on('connect', function () {
+                                        utilities_1.default.log('Connected to peer: ' + global['nodes'][bootstrap[k]].io.uri);
+                                        global['connected'][bootstrap[k]] = true;
+                                    });
+                                    global['nodes'][bootstrap[k]].on('disconnect', function () {
+                                        utilities_1.default.log('Disconnected from peer: ' + global['nodes'][bootstrap[k]].io.uri);
+                                        global['connected'][bootstrap[k]] = false;
+                                    });
+                                    //PROTOCOLS
+                                    global['nodes'][bootstrap[k]].on('message', function (data) {
+                                        messages_1.default.processMessage('message', data);
+                                    });
+                                    global['nodes'][bootstrap[k]].on('pubkey', function (data) {
+                                        messages_1.default.processMessage('pubkey', data);
+                                    });
+                                }
+                            });
                         });
                     }
                 }
@@ -65,7 +75,7 @@ class P2P {
                             messages_1.default.relayMessage(data);
                         });
                         socket.on('pubkey', function (data) {
-                            utilities_1.default.log('Relaying pubkey to peers');
+                            utilities_1.default.log('Relaying pubkey to peers...');
                             if (config.DEBUG === true) {
                                 console.log(data);
                             }
