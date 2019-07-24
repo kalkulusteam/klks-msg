@@ -9,12 +9,14 @@ new Vue({
         },
         message: '',
         isSending: false,
-        users: {}
+        users: {},
+        discussions: {}
     },
     mounted() {
         const app = this
         app.updateContacts()
         app.getPublicChat()
+        app.getDiscussions()
         setInterval(function () {
             app.getPublicChat()
         }, 500)
@@ -29,6 +31,12 @@ new Vue({
                     app.users = response.data
                 })
             }, 10)
+        },
+        getDiscussions() {
+            const app = this
+            axios.get('http://localhost:11673/discussions').then(response => {
+                app.discussions = response.data
+            })
         },
         getPublicChat() {
             const app = this

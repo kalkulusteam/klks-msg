@@ -205,7 +205,8 @@ export default class Messages {
                         pubkey: received['message']
                     })
                   }else if(protocol === 'message'){
-                    var decrypted = await Encryption.decryptMessage(received['message'])
+                    var jsonmsg = JSON.parse(received['message'])
+                    var decrypted = await Encryption.decryptMessage(jsonmsg['message'])
                     if(decrypted !== false){
                         Messages.store(received, 'private')
                         Utilities.log('Received SAFU message from ' + received['address'])

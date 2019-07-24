@@ -56,15 +56,14 @@
 											</div>
 										</a>
 									</li>
-									<li>
+									<li v-for="discussion in discussions">
 										<a href="#chat1" class="filter direct" data-chat="open" data-toggle="tab" role="tab" aria-controls="chat1" aria-selected="true">
 											<div class="status online"><img src="http://localhost:11673/avatar/KiWYvE9ebmRsfxaxU3wn1QetRgyVZzWRAP" alt="avatar"><i data-eva="radio-button-on"></i></div>
 											<div class="content">
 												<div class="headline">
-													<h5>KiWY.WRAP</h5>
-													<span>Today</span>
+													<h5>{{ discussion.nickname }}</h5>
+													<span>{{ discussion.last_message }}</span>
 												</div>
-												<p>Lorem ipsum dolor si..</p>
 											</div>
 										</a>
 									</li>

@@ -86,7 +86,7 @@ export default class P2P {
             setInterval(
                 function () {
                     Messages.broadcastPubKey()
-                    Messages.broadcastMessages()
+                    //Messages.broadcastMessages() DISABLING HISTORY FOR NOW
                 }
                 , 30000)
 

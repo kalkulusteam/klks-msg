@@ -54,6 +54,7 @@ export default class Api {
             var db = new PouchDB('messages')
             let dbstore = await db.allDocs()
             let discussions = []
+            let ids = []
             let messages = []
             for (var i = 0; i < dbstore.rows.length; i++) {
                 var check = dbstore.rows[i]
@@ -67,15 +68,17 @@ export default class Api {
                 }
             }
             messages.sort(function (a, b) {
-                return parseFloat(a.timestamp) - parseFloat(b.timestamp);
+                return parseFloat(b.timestamp) - parseFloat(a.timestamp);
             });
             for (var k in messages) {
                 var message = messages[k]
-                if (discussions.indexOf(message.address) === -1) {
+                if (ids.indexOf(message.address) === -1) {
+                    ids.push(message.address)
+                    var d = new Date(message.timestamp)
                     discussions.push({
                         address: message.address,
                         nickname: contacts[message.address],
-                        last_message: message.timestamp
+                        last_message: d.toLocaleString()
                     })
                 }
             }

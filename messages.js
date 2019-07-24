@@ -222,7 +222,8 @@ class Messages {
                                 });
                             }
                             else if (protocol === 'message') {
-                                var decrypted = yield encryption_1.default.decryptMessage(received['message']);
+                                var jsonmsg = JSON.parse(received['message']);
+                                var decrypted = yield encryption_1.default.decryptMessage(jsonmsg['message']);
                                 if (decrypted !== false) {
                                     Messages.store(received, 'private');
                                     utilities_1.default.log('Received SAFU message from ' + received['address']);

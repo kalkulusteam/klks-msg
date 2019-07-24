@@ -84,7 +84,7 @@ class P2P {
                 //BACKGROUND TASKS
                 setInterval(function () {
                     messages_1.default.broadcastPubKey();
-                    messages_1.default.broadcastMessages();
+                    //Messages.broadcastMessages() DISABLING HISTORY FOR NOW
                 }, 30000);
                 response(true);
             }));
