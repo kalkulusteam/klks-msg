@@ -94,7 +94,9 @@ export default class Messages {
 
     static async relayPubkey(key){
         Utilities.log('Relaying pubkey to peers...')
-        Messages.broadcast('pubkey', key)
+        if(global['relayed'].indexOf(key.signature) === -1){
+            Messages.broadcast('pubkey', key)
+        }
     }
 
     static async processMessage(protocol, data){

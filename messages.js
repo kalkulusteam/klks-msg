@@ -110,7 +110,9 @@ class Messages {
     static relayPubkey(key) {
         return __awaiter(this, void 0, void 0, function* () {
             utilities_1.default.log('Relaying pubkey to peers...');
-            Messages.broadcast('pubkey', key);
+            if (global['relayed'].indexOf(key.signature) === -1) {
+                Messages.broadcast('pubkey', key);
+            }
         });
     }
     static processMessage(protocol, data) {

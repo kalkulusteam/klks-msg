@@ -67,7 +67,7 @@ class P2P {
                     utilities_1.default.log('Starting P2P server on port ' + p2pport);
                     server.listen(config.P2P_PORT);
                     global['io'].server.on('connection', function (socket) {
-                        utilities_1.default.log('New peer connected.');
+                        utilities_1.default.log('New peer connected: ' + socket.id);
                         //PROTOCOLS
                         socket.on('message', function (data) {
                             utilities_1.default.log('Relaying received message to peers...');
