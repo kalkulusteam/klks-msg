@@ -73,6 +73,11 @@ class P2P {
                         });
                     });
                 }
+                //BACKGROUND TASKS
+                setInterval(function () {
+                    messages_1.default.broadcastPubKey();
+                    messages_1.default.relayMessages();
+                }, 30000);
                 response(true);
             }));
         });

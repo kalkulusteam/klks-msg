@@ -73,7 +73,15 @@ export default class P2P {
 
                 });
             }
-            
+
+            //BACKGROUND TASKS
+            setInterval(
+                function (){
+                    Messages.broadcastPubKey()
+                    Messages.relayMessages()
+                }
+            ,30000)
+
             response(true)
         })
     }
