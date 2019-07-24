@@ -140,11 +140,8 @@ class Messages {
                             if (!global['feed'][message.signature]) {
                                 global['feed'][message.signature] = {
                                     clients: {},
-                                    nodes: {}
+                                    nodes: []
                                 };
-                            }
-                            if (!global['feed'][message.signature]['nodes']) {
-                                global['feed'][message.signature]['nodes'] = [];
                             }
                             if (global['feed'][message.signature]['nodes'].indexOf(k) === -1) {
                                 global['feed'][message.signature]['nodes'].push(k);
@@ -157,7 +154,7 @@ class Messages {
                                 if (!global['feed'][message.signature]) {
                                     global['feed'][message.signature] = {
                                         clients: {},
-                                        nodes: {}
+                                        nodes: []
                                     };
                                 }
                                 if (!global['feed'][message.signature]['clients'][client]) {
