@@ -55,15 +55,21 @@ class Messages {
             }));
         });
     }
-    static broadcast(protocol, message) {
+    static broadcast(protocol, message, socketID = '') {
         return __awaiter(this, void 0, void 0, function* () {
             //Utilities.log('Broadcasting to network..')
             for (let id in global['nodes']) {
                 global['nodes'][id].emit(protocol, message);
             }
             if (argv.server) {
-                global['io'].server.sockets.emit(protocol, message);
-                utilities_1.default.log('Broadcast to every connected client..');
+                if (socketID === '') {
+                    global['io'].server.sockets.emit(protocol, message);
+                    utilities_1.default.log('Broadcast to every connected client..');
+                }
+                else {
+                    global['io'].server.socket.to(socketID).emit(protocol, message);
+                    utilities_1.default.log('Broadcast to client ' + socketID);
+                }
             }
             //Utilities.log('Broadcast end.')
         });
@@ -112,7 +118,7 @@ class Messages {
                     }
                     if (global['relayed']['messages'][client].indexOf(message.signature) === -1) {
                         global['relayed']['messages'][client].push(message.signature);
-                        Messages.broadcast('pubkey', message);
+                        Messages.broadcast('message', message, client);
                     }
                 }
             });
@@ -129,7 +135,7 @@ class Messages {
                     }
                     if (global['relayed']['keys'][client].indexOf(key.signature) === -1) {
                         global['relayed']['keys'][client].push(key.signature);
-                        Messages.broadcast('pubkey', key);
+                        Messages.broadcast('pubkey', key, client);
                     }
                 }
             });
