@@ -1,7 +1,10 @@
 const PouchDB = require('pouchdb')
 PouchDB.plugin(require('pouchdb-find'))
 import Identity from './identity'
-global['relayed'] = []
+global['relayed'] = {
+    messages: {},
+    keys: {}
+}
 const config = require('./config.json')
 import Encryption from './encryption'
 import Utilities from './utilities';
@@ -85,18 +88,35 @@ export default class Messages {
     }
 
     static async relayMessage(message){
-        Utilities.log('Relaying message to peers...')
-        if(global['relayed'].indexOf(message.signature) === -1){
-            global['relayed'].push(message.signature)
-            Messages.broadcast('message', message)
-        }
+        Utilities.log('Relaying message to clients...')
+        global['io'].server.sockets.clients((error, clients) => {
+            for(var k in clients){
+                var client = clients[k]
+                if(!global['relayed']['messages'][client]){
+                    global['relayed']['messages'][client] = []
+                }
+                if(global['relayed']['messages'][client].indexOf(message.signature) === -1){
+                    global['relayed']['messages'][client].push(message.signature)
+                    Messages.broadcast('pubkey', message)
+                }
+            }
+        })
     }
 
     static async relayPubkey(key){
-        Utilities.log('Relaying pubkey to peers...')
-        if(global['relayed'].indexOf(key.signature) === -1){
-            Messages.broadcast('pubkey', key)
-        }
+        Utilities.log('Relaying pubkey to clients...')
+        global['io'].server.sockets.clients((error, clients) => {
+            for(var k in clients){
+                var client = clients[k]
+                if(!global['relayed']['keys'][client]){
+                    global['relayed']['keys'][client] = []
+                }
+                if(global['relayed']['keys'][client].indexOf(key.signature) === -1){
+                    global['relayed']['keys'][client].push(key.signature)
+                    Messages.broadcast('pubkey', key)
+                }
+            }
+        })
     }
 
     static async processMessage(protocol, data){

@@ -11,7 +11,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const PouchDB = require('pouchdb');
 PouchDB.plugin(require('pouchdb-find'));
 const identity_1 = require("./identity");
-global['relayed'] = [];
+global['relayed'] = {
+    messages: {},
+    keys: {}
+};
 const config = require('./config.json');
 const encryption_1 = require("./encryption");
 const utilities_1 = require("./utilities");
@@ -100,19 +103,36 @@ class Messages {
     }
     static relayMessage(message) {
         return __awaiter(this, void 0, void 0, function* () {
-            utilities_1.default.log('Relaying message to peers...');
-            if (global['relayed'].indexOf(message.signature) === -1) {
-                global['relayed'].push(message.signature);
-                Messages.broadcast('message', message);
-            }
+            utilities_1.default.log('Relaying message to clients...');
+            global['io'].server.sockets.clients((error, clients) => {
+                for (var k in clients) {
+                    var client = clients[k];
+                    if (!global['relayed']['messages'][client]) {
+                        global['relayed']['messages'][client] = [];
+                    }
+                    if (global['relayed']['messages'][client].indexOf(message.signature) === -1) {
+                        global['relayed']['messages'][client].push(message.signature);
+                        Messages.broadcast('pubkey', message);
+                    }
+                }
+            });
         });
     }
     static relayPubkey(key) {
         return __awaiter(this, void 0, void 0, function* () {
-            utilities_1.default.log('Relaying pubkey to peers...');
-            if (global['relayed'].indexOf(key.signature) === -1) {
-                Messages.broadcast('pubkey', key);
-            }
+            utilities_1.default.log('Relaying pubkey to clients...');
+            global['io'].server.sockets.clients((error, clients) => {
+                for (var k in clients) {
+                    var client = clients[k];
+                    if (!global['relayed']['keys'][client]) {
+                        global['relayed']['keys'][client] = [];
+                    }
+                    if (global['relayed']['keys'][client].indexOf(key.signature) === -1) {
+                        global['relayed']['keys'][client].push(key.signature);
+                        Messages.broadcast('pubkey', key);
+                    }
+                }
+            });
         });
     }
     static processMessage(protocol, data) {

@@ -45,7 +45,7 @@ class Identity {
                 let dbcheck = yield db.allDocs();
                 if (dbcheck.rows.length === 0) {
                     yield db.post(identity);
-                    console.log('Saved new public key.');
+                    console.log('Saved new public key from ' + identity.address + '.');
                 }
                 else {
                     var found = false;
@@ -58,7 +58,7 @@ class Identity {
                     }
                     if (found === false) {
                         yield db.post(identity);
-                        console.log('Saved new public key.');
+                        console.log('Saved new public key from ' + identity.address + '.');
                     }
                     response(true);
                 }

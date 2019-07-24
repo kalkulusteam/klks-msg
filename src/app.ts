@@ -7,7 +7,7 @@ var fs = require('fs')
 require('events').EventEmitter.defaultMaxListeners = 150;
 var argv = require('minimist')(process.argv.slice(2))
 
-if(argv.server === undefined){
+if (argv.server === undefined) {
     console.log('Starting interface')
     Main.main(app, BrowserWindow);
 }

@@ -30,7 +30,6 @@ class Api {
                 if (fs.existsSync(lockfiles[l])) {
                     fs.unlinkSync(lockfiles[l]);
                 }
-                fs.unlinkSync(lockfiles[l]);
             }
             let apiport = yield getPort({ port: config.API_PORT });
             api.get('/avatar/:hash', (req, res) => {
@@ -205,6 +204,7 @@ class Api {
             }));
             api.get('/contacts', (req, res) => __awaiter(this, void 0, void 0, function* () {
                 let contacts = [];
+                let identities = [];
                 var db = new PouchDB('users');
                 let dbcheck = yield db.allDocs();
                 for (var i = 0; i < dbcheck.rows.length; i++) {
@@ -216,7 +216,10 @@ class Api {
                         let nickname = id.address.substr(0, 4) + '.' + id.address.substr(-4);
                         id.nickname = nickname;
                     }
-                    contacts.push(id);
+                    if (identities.indexOf(id.address) === -1) {
+                        identities.push(id.address);
+                        contacts.push(id);
+                    }
                 }
                 res.send(contacts);
             }));

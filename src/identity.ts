@@ -13,14 +13,14 @@ const klksInfo = {
 
 export default class Identity {
     static async load() {
-        return new Promise( async response => {
+        return new Promise(async response => {
             var db = new PouchDB('settings');
             let dbcheck = await db.allDocs()
             let identity
-            if(dbcheck.rows.length === 0){
+            if (dbcheck.rows.length === 0) {
                 identity = await Identity.create()
                 await db.post(identity)
-            }else{
+            } else {
                 let entry = dbcheck.rows[0]
                 identity = await db.get(entry.id)
             }
@@ -29,24 +29,24 @@ export default class Identity {
     }
 
     static async store(identity) {
-        return new Promise( async response => {
+        return new Promise(async response => {
             var db = new PouchDB('users')
             let dbcheck = await db.allDocs()
-            if(dbcheck.rows.length === 0){
+            if (dbcheck.rows.length === 0) {
                 await db.post(identity)
-                console.log('Saved new public key.')
-            }else{
+                console.log('Saved new public key from ' + identity.address + '.')
+            } else {
                 var found = false
-                for(var i = 0; i < dbcheck.rows.length; i++){
+                for (var i = 0; i < dbcheck.rows.length; i++) {
                     var check = dbcheck.rows[i]
                     var id = await db.get(check.id)
-                    if(id.address === identity.address){
+                    if (id.address === identity.address) {
                         found = true
                     }
                 }
-                if(found === false){
+                if (found === false) {
                     await db.post(identity)
-                    console.log('Saved new public key.')
+                    console.log('Saved new public key from ' + identity.address + '.')
                 }
                 response(true)
             }
@@ -54,17 +54,17 @@ export default class Identity {
     }
 
     static async find(address) {
-        return new Promise( async response => {
+        return new Promise(async response => {
             var db = new PouchDB('users')
             let dbcheck = await db.allDocs()
-            if(dbcheck.rows.length === 0){
+            if (dbcheck.rows.length === 0) {
                 response(false)
-            }else{
+            } else {
                 var found = false
-                for(var i = 0; i < dbcheck.rows.length; i++){
+                for (var i = 0; i < dbcheck.rows.length; i++) {
                     var check = dbcheck.rows[i]
                     var id = await db.get(check.id)
-                    if(id.address === address){
+                    if (id.address === address) {
                         found = id.pubkey
                     }
                 }
@@ -74,45 +74,45 @@ export default class Identity {
     }
 
     static async isBlocked(address) {
-        return new Promise( async response => {
+        return new Promise(async response => {
             var db = new PouchDB('users')
             let dbcheck = await db.allDocs()
-            if(dbcheck.rows.length === 0){
+            if (dbcheck.rows.length === 0) {
                 response(false)
-            }else{
+            } else {
                 var found = false
-                for(var i = 0; i < dbcheck.rows.length; i++){
+                for (var i = 0; i < dbcheck.rows.length; i++) {
                     var check = dbcheck.rows[i]
                     var id = await db.get(check.id)
-                    if(id.address === address){
+                    if (id.address === address) {
                         found = id
                     }
                 }
-                if(found['blocked'] === false || found['blocked'] === undefined){
+                if (found['blocked'] === false || found['blocked'] === undefined) {
                     response(false)
-                }else{
+                } else {
                     response(true)
                 }
             }
         })
     }
-    
+
     static async create() {
-        return new Promise( async response => {
+        return new Promise(async response => {
             var ck = new CoinKey.createRandom(klksInfo)
-            
+
             var klksprv = ck.privateWif;
             var klkskey = ck.publicKey.toString('hex');
             var klkspub = ck.publicAddress;
 
             console.log("CREATED PUB ADDRESS: " + klkspub);
             console.log("CREATED PUB KEY: " + klkskey);
-            
+
             var wallet = {
                 prv: klksprv,
                 pub: klkspub,
                 key: klkskey
-            }  
+            }
 
             var keys = await Identity.generateKeys()
             var rsa = {
@@ -129,7 +129,7 @@ export default class Identity {
         })
     }
 
-    static async signWithKey(key, message){
+    static async signWithKey(key, message) {
         return new Promise(response => {
             var ck = CoinKey.fromWif(key, klksInfo);
             let hash = CryptoJS.SHA256(message);
@@ -145,7 +145,7 @@ export default class Identity {
         })
     }
 
-    static async returnPubKey(key){
+    static async returnPubKey(key) {
         return new Promise(response => {
             var ck = CoinKey.fromWif(key, klksInfo);
             let privKey = ck.privateKey
@@ -153,38 +153,38 @@ export default class Identity {
             response(pubKey)
         })
     }
-    
-    static async verifySign(keyhex, sighex, message){
+
+    static async verifySign(keyhex, sighex, message) {
         return new Promise(response => {
             let hash = CryptoJS.SHA256(message);
             let msg = Buffer.from(hash.toString(CryptoJS.enc.Hex), 'hex')
-            let signature = Buffer.from(sighex,'hex')
-            let pubKey = Buffer.from(keyhex,'hex')
+            let signature = Buffer.from(sighex, 'hex')
+            let pubKey = Buffer.from(keyhex, 'hex')
             let verified = secp256k1.verify(msg, signature, pubKey)
             response(verified)
         })
     }
 
-    static async generateKeys(){
+    static async generateKeys() {
         return new Promise(response => {
-            const { publicKey, privateKey } = 
-            crypto.generateKeyPairSync('rsa', 
-                {
-                    modulusLength: 4096,
-                    namedCurve: 'secp256k1',
-                    publicKeyEncoding: {
-                        type: 'spki',
-                        format: 'pem'     
-                    },     
-                    privateKeyEncoding: {
-                        type: 'pkcs8',
-                        format: 'pem'
-                    } 
-                });
-                response({
-                    pub: publicKey,
-                    priv: privateKey
-                })
-            }) 
+            const { publicKey, privateKey } =
+                crypto.generateKeyPairSync('rsa',
+                    {
+                        modulusLength: 4096,
+                        namedCurve: 'secp256k1',
+                        publicKeyEncoding: {
+                            type: 'spki',
+                            format: 'pem'
+                        },
+                        privateKeyEncoding: {
+                            type: 'pkcs8',
+                            format: 'pem'
+                        }
+                    });
+            response({
+                pub: publicKey,
+                priv: privateKey
+            })
+        })
     }
 }
