@@ -8,11 +8,11 @@ var app = require('express')()
 var server = require('http').Server(app)
 global['io'] = {server: null, client: null}
 global['io'].server = require('socket.io')(server)
-global['io'].client = require('socket.io-client')
 const getPort = require('get-port')
 var dns = require('dns')
 const publicIp = require('public-ip');
 
+global['clients'] = {}
 global['nodes'] = {}
 global['connected'] = {}
 var argv = require('minimist')(process.argv.slice(2))
@@ -27,34 +27,35 @@ export default class P2P {
 
             let bootstrap = config.BOOTSTRAP_NODES
             for(var k in bootstrap){
-                if(!global['nodes'][bootstrap[k]]){
+                if(!global['clients'][bootstrap[k]]){
                     //INIT CONNECTION
-                    Utilities.log('Init bootstrap connection to ' + bootstrap[k])
+                    Utilities.log('Bootstrap connection to ' + bootstrap[k])
                     let lookupURL = bootstrap[k].replace('http://','').replace(':' + config.P2P_PORT,'')
-                    dns.lookup(lookupURL, async function onLookup(err, ip, family) {
-                        let publicip = await publicIp.v4()
-                        if(ip !== publicip){
-                            global['nodes'][bootstrap[k]] = global['io'].client.connect(bootstrap[k], {reconnect: true})
-                            global['nodes'][bootstrap[k]].on('connect', function () {
-                                Utilities.log('Connected to peer: ' + global['nodes'][bootstrap[k]].io.uri)
-                                global['connected'][bootstrap[k]] = true
-                            })
-                            global['nodes'][bootstrap[k]].on('disconnect', function () {
-                                Utilities.log('Disconnected from peer: ' + global['nodes'][bootstrap[k]].io.uri)
-                                global['connected'][bootstrap[k]] = false
-                            })
-        
-                            //PROTOCOLS
-                            global['nodes'][bootstrap[k]].on('message', function (data) {
-                                Utilities.log('Received message from outer space.')
-                                Messages.processMessage('message', data)
-                            })
-                            global['nodes'][bootstrap[k]].on('pubkey', function (data) {
-                                Utilities.log('Received pubkey message from outer space.')
-                                Messages.processMessage('pubkey', data)
-                            })
-                        }
-                    })
+                    let ip = await this.lookup(lookupURL)
+                    let publicip = await publicIp.v4()
+                    let node = bootstrap[k]
+                    
+                    if(ip !== publicip){
+                        global['nodes'][node] = require('socket.io-client')(node, {reconnect: true})
+                        global['nodes'][node].on('connect', function () {
+                            Utilities.log('Connected to peer: ' + global['nodes'][node].io.uri)
+                            global['connected'][node] = true
+                        })
+                        global['nodes'][node].on('disconnect', function () {
+                            Utilities.log('Disconnected from peer: ' + global['nodes'][node].io.uri)
+                            global['connected'][node] = false
+                        })
+    
+                        //PROTOCOLS
+                        global['nodes'][bootstrap[k]].on('message', function (data) {
+                            Utilities.log('Received message from outer space.')
+                            Messages.processMessage('message', data)
+                        })
+                        global['nodes'][bootstrap[k]].on('pubkey', function (data) {
+                            Utilities.log('Received pubkey message from outer space.')
+                            Messages.processMessage('pubkey', data)
+                        })
+                    }
                 }
             }
 
@@ -90,6 +91,14 @@ export default class P2P {
             ,30000)
 
             response(true)
+        })
+    }
+
+    static async lookup(lookupURL){
+        return new Promise(response => {
+            dns.lookup(lookupURL, async function onLookup(err, ip, family) {
+                response(ip)
+            })
         })
     }
 }

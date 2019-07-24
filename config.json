@@ -3,6 +3,13 @@
     "P2P_PORT": 55576,
     "API_PORT": 11673,
     "BOOTSTRAP_NODES": [
-        "http://ipfs.kalkul.us:55576"
+        "http://ipfs.kalkul.us:55576",
+        "http://node01.kalkul.us:55576",
+        "http://node02.kalkul.us:55576",
+        "http://node03.kalkul.us:55576",
+        "http://node04.kalkul.us:55576",
+        "http://node05.kalkul.us:55576",
+        "http://node06.kalkul.us:55576",
+        "http://node07.kalkul.us:55576"
     ]
 }

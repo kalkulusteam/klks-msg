@@ -16,10 +16,10 @@ var app = require('express')();
 var server = require('http').Server(app);
 global['io'] = { server: null, client: null };
 global['io'].server = require('socket.io')(server);
-global['io'].client = require('socket.io-client');
 const getPort = require('get-port');
 var dns = require('dns');
 const publicIp = require('public-ip');
+global['clients'] = {};
 global['nodes'] = {};
 global['connected'] = {};
 var argv = require('minimist')(process.argv.slice(2));
@@ -32,35 +32,33 @@ class P2P {
                 utilities_1.default.log('Identity loaded: ' + identity['wallet']['pub']);
                 let bootstrap = config.BOOTSTRAP_NODES;
                 for (var k in bootstrap) {
-                    if (!global['nodes'][bootstrap[k]]) {
+                    if (!global['clients'][bootstrap[k]]) {
                         //INIT CONNECTION
-                        utilities_1.default.log('Init bootstrap connection to ' + bootstrap[k]);
+                        utilities_1.default.log('Bootstrap connection to ' + bootstrap[k]);
                         let lookupURL = bootstrap[k].replace('http://', '').replace(':' + config.P2P_PORT, '');
-                        dns.lookup(lookupURL, function onLookup(err, ip, family) {
-                            return __awaiter(this, void 0, void 0, function* () {
-                                let publicip = yield publicIp.v4();
-                                if (ip !== publicip) {
-                                    global['nodes'][bootstrap[k]] = global['io'].client.connect(bootstrap[k], { reconnect: true });
-                                    global['nodes'][bootstrap[k]].on('connect', function () {
-                                        utilities_1.default.log('Connected to peer: ' + global['nodes'][bootstrap[k]].io.uri);
-                                        global['connected'][bootstrap[k]] = true;
-                                    });
-                                    global['nodes'][bootstrap[k]].on('disconnect', function () {
-                                        utilities_1.default.log('Disconnected from peer: ' + global['nodes'][bootstrap[k]].io.uri);
-                                        global['connected'][bootstrap[k]] = false;
-                                    });
-                                    //PROTOCOLS
-                                    global['nodes'][bootstrap[k]].on('message', function (data) {
-                                        utilities_1.default.log('Received message from outer space.');
-                                        messages_1.default.processMessage('message', data);
-                                    });
-                                    global['nodes'][bootstrap[k]].on('pubkey', function (data) {
-                                        utilities_1.default.log('Received pubkey message from outer space.');
-                                        messages_1.default.processMessage('pubkey', data);
-                                    });
-                                }
+                        let ip = yield this.lookup(lookupURL);
+                        let publicip = yield publicIp.v4();
+                        let node = bootstrap[k];
+                        if (ip !== publicip) {
+                            global['nodes'][node] = require('socket.io-client')(node, { reconnect: true });
+                            global['nodes'][node].on('connect', function () {
+                                utilities_1.default.log('Connected to peer: ' + global['nodes'][node].io.uri);
+                                global['connected'][node] = true;
                             });
-                        });
+                            global['nodes'][node].on('disconnect', function () {
+                                utilities_1.default.log('Disconnected from peer: ' + global['nodes'][node].io.uri);
+                                global['connected'][node] = false;
+                            });
+                            //PROTOCOLS
+                            global['nodes'][bootstrap[k]].on('message', function (data) {
+                                utilities_1.default.log('Received message from outer space.');
+                                messages_1.default.processMessage('message', data);
+                            });
+                            global['nodes'][bootstrap[k]].on('pubkey', function (data) {
+                                utilities_1.default.log('Received pubkey message from outer space.');
+                                messages_1.default.processMessage('pubkey', data);
+                            });
+                        }
                     }
                 }
                 if (argv.server) {
@@ -89,6 +87,17 @@ class P2P {
                 }, 30000);
                 response(true);
             }));
+        });
+    }
+    static lookup(lookupURL) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise(response => {
+                dns.lookup(lookupURL, function onLookup(err, ip, family) {
+                    return __awaiter(this, void 0, void 0, function* () {
+                        response(ip);
+                    });
+                });
+            });
         });
     }
 }
