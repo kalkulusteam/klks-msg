@@ -60,7 +60,7 @@ export default class Messages {
         var message = publicKey
         Identity.signWithKey(identity['wallet']['prv'], message).then(signature => {
             signature['message'] = message
-            Messages.broadcast('pubkey', JSON.stringify(signature))
+            Messages.broadcast('pubkey', signature)
         })
     }
     
@@ -79,7 +79,7 @@ export default class Messages {
                 delete message._rev
                 delete message.timestamp
                 delete message.received_at
-                Messages.broadcast('message',message)
+                Messages.broadcast('message', message)
             }
         }
     }
@@ -88,7 +88,7 @@ export default class Messages {
         Utilities.log('Relaying message to peers...')
         if(global['relayed'].indexOf(message.signature) === -1){
             global['relayed'].push(message.signature)
-            Messages.broadcast('message',JSON.stringify(message))
+            Messages.broadcast('message', message)
         }
     }
 
@@ -99,7 +99,8 @@ export default class Messages {
 
     static async processMessage(protocol, data){
         try{
-            var received = JSON.parse(data.toString())
+            var received = data
+            console.log(received)
             Identity.verifySign(received.pubKey, received.signature, received['message']).then(async signature => {
               if(signature === true){
                 var blocked = await Identity.isBlocked(received['address'])

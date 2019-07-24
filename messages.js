@@ -73,7 +73,7 @@ class Messages {
             var message = publicKey;
             identity_1.default.signWithKey(identity['wallet']['prv'], message).then(signature => {
                 signature['message'] = message;
-                Messages.broadcast('pubkey', JSON.stringify(signature));
+                Messages.broadcast('pubkey', signature);
             });
         });
     }
@@ -103,7 +103,7 @@ class Messages {
             utilities_1.default.log('Relaying message to peers...');
             if (global['relayed'].indexOf(message.signature) === -1) {
                 global['relayed'].push(message.signature);
-                Messages.broadcast('message', JSON.stringify(message));
+                Messages.broadcast('message', message);
             }
         });
     }
@@ -116,7 +116,8 @@ class Messages {
     static processMessage(protocol, data) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                var received = JSON.parse(data.toString());
+                var received = data;
+                console.log(received);
                 identity_1.default.verifySign(received.pubKey, received.signature, received['message']).then((signature) => __awaiter(this, void 0, void 0, function* () {
                     if (signature === true) {
                         var blocked = yield identity_1.default.isBlocked(received['address']);

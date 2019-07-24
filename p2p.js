@@ -51,11 +51,11 @@ class P2P {
                                     });
                                     //PROTOCOLS
                                     global['nodes'][bootstrap[k]].on('message', function (data) {
-                                        console.log('Received message');
+                                        console.log('Received message from outer space.');
                                         messages_1.default.processMessage('message', data);
                                     });
                                     global['nodes'][bootstrap[k]].on('pubkey', function (data) {
-                                        console.log('Received pubkey message');
+                                        console.log('Received pubkey message from outer space.');
                                         messages_1.default.processMessage('pubkey', data);
                                     });
                                 }
