@@ -77,7 +77,7 @@ class Messages {
                     utilities_1.default.log('Broadcast to every connected client..');
                 }
                 else {
-                    global['io'].server.socket.to(socketID).emit(protocol, message);
+                    global['io'].server.sockets.emit(protocol, message);
                     utilities_1.default.log('Broadcast to client ' + socketID);
                 }
             }
@@ -95,8 +95,8 @@ class Messages {
                 for (var k in global['connected']) {
                     let connected = global['connected'][k];
                     if (connected === true) {
-                        if (global['broadcasted']['keys'].indexOf(k) === -1) {
-                            global['broadcasted']['keys'].push(k);
+                        if (global['broadcasted']['key'].indexOf(k) === -1) {
+                            global['broadcasted']['key'].push(k);
                             Messages.broadcast('pubkey', signature, '', k);
                         }
                     }
