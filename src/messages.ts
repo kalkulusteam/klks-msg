@@ -1,10 +1,16 @@
 const PouchDB = require('pouchdb')
 PouchDB.plugin(require('pouchdb-find'))
 import Identity from './identity'
+
 global['relayed'] = {
     messages: {},
     keys: {}
 }
+
+global['broadcasted'] = {
+    key: []
+}
+
 const config = require('./config.json')
 import Encryption from './encryption'
 import Utilities from './utilities';
@@ -44,10 +50,16 @@ export default class Messages {
         })
     }
 
-    static async broadcast(protocol, message, socketID = '') {
+    static async broadcast(protocol, message, socketID = '', nodeID = '') {
         //Utilities.log('Broadcasting to network..')
-        for (let id in global['nodes']) {
-            global['nodes'][id].emit(protocol, message)
+        if(nodeID === ''){
+            for (let id in global['nodes']) {
+                global['nodes'][id].emit(protocol, message)
+            }
+        }else{
+            if(global['nodes'][nodeID]){
+                global['nodes'][nodeID].emit(protocol, message)
+            }
         }
         if(argv.server){
             if(socketID === ''){
@@ -68,7 +80,15 @@ export default class Messages {
         var message = publicKey
         Identity.signWithKey(identity['wallet']['prv'], message).then(signature => {
             signature['message'] = message
-            Messages.broadcast('pubkey', signature)
+            for(var k in global['connected']){
+                let connected = global['connected'][k]
+                if(connected === true){
+                    if(global['broadcasted']['keys'].indexOf(k) === -1){
+                        global['broadcasted']['keys'].push(k)
+                        Messages.broadcast('pubkey', signature, '', k)
+                    }
+                }
+            }
         })
     }
     

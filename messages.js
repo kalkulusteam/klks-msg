@@ -15,6 +15,9 @@ global['relayed'] = {
     messages: {},
     keys: {}
 };
+global['broadcasted'] = {
+    key: []
+};
 const config = require('./config.json');
 const encryption_1 = require("./encryption");
 const utilities_1 = require("./utilities");
@@ -55,11 +58,18 @@ class Messages {
             }));
         });
     }
-    static broadcast(protocol, message, socketID = '') {
+    static broadcast(protocol, message, socketID = '', nodeID = '') {
         return __awaiter(this, void 0, void 0, function* () {
             //Utilities.log('Broadcasting to network..')
-            for (let id in global['nodes']) {
-                global['nodes'][id].emit(protocol, message);
+            if (nodeID === '') {
+                for (let id in global['nodes']) {
+                    global['nodes'][id].emit(protocol, message);
+                }
+            }
+            else {
+                if (global['nodes'][nodeID]) {
+                    global['nodes'][nodeID].emit(protocol, message);
+                }
             }
             if (argv.server) {
                 if (socketID === '') {
@@ -82,7 +92,15 @@ class Messages {
             var message = publicKey;
             identity_1.default.signWithKey(identity['wallet']['prv'], message).then(signature => {
                 signature['message'] = message;
-                Messages.broadcast('pubkey', signature);
+                for (var k in global['connected']) {
+                    let connected = global['connected'][k];
+                    if (connected === true) {
+                        if (global['broadcasted']['keys'].indexOf(k) === -1) {
+                            global['broadcasted']['keys'].push(k);
+                            Messages.broadcast('pubkey', signature, '', k);
+                        }
+                    }
+                }
             });
         });
     }
