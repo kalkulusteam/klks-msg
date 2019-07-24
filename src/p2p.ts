@@ -22,8 +22,8 @@ export default class P2P {
         return new Promise( async response => {
             console.log('Starting P2P client.')
                         
-            let identity = await Identity.load()
-            console.log('Identity loaded: ' + identity['wallet']['pub'])
+            global['identity'] = await Identity.load()
+            console.log('Identity loaded: ' + global['identity']['wallet']['pub'])
 
             let bootstrap = config.BOOTSTRAP_NODES
             for(var k in bootstrap){

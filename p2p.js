@@ -28,8 +28,8 @@ class P2P {
         return __awaiter(this, void 0, void 0, function* () {
             return new Promise((response) => __awaiter(this, void 0, void 0, function* () {
                 console.log('Starting P2P client.');
-                let identity = yield identity_1.default.load();
-                console.log('Identity loaded: ' + identity['wallet']['pub']);
+                global['identity'] = yield identity_1.default.load();
+                console.log('Identity loaded: ' + global['identity']['wallet']['pub']);
                 let bootstrap = config.BOOTSTRAP_NODES;
                 for (var k in bootstrap) {
                     if (!global['clients'][bootstrap[k]]) {

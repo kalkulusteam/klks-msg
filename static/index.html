@@ -19,7 +19,7 @@
 					<a href="#" class="logo" rel="home"><img src="./assets/img/favicon.png" alt="logo"></a>
 					<ul class="nav" role="tablist">
 						<li><a href="#conversations" class="active" data-toggle="tab" role="tab" aria-controls="conversations" aria-selected="true"><i data-eva="message-square" data-eva-animation="pulse"></i></a></li>
-						<li><a href="#friends" data-toggle="tab" role="tab" aria-controls="friends" aria-selected="false"><i data-eva="people" data-eva-animation="pulse"></i></a></li>
+						<li v-on:click="updateContacts()"><a href="#friends" data-toggle="tab" role="tab" aria-controls="friends" aria-selected="false"><i data-eva="people" data-eva-animation="pulse"></i></a></li>
 						<!--<li><a href="#notifications" data-toggle="tab" role="tab" aria-controls="notifications" aria-selected="false"><i data-eva="bell" data-eva-animation="pulse"></i></a></li>-->
 						<li><a href="#settings" data-toggle="tab" role="tab" aria-controls="settings" aria-selected="false"><i data-eva="settings" data-eva-animation="pulse"></i></a></li>
 						<li><button type="button" class="btn mode"><i data-eva="bulb" data-eva-animation="pulse"></i></button></li>
@@ -84,14 +84,15 @@
 								<h4>Users</h4>
 								<hr>
 								<ul class="users">
-									<li>
+									<li v-for="user in users">
 										<a href="#">
-											<div class="status online"><img src="http://localhost:11673/avatar/KiWYvE9ebmRsfxaxU3wn1QetRgyVZzWRAP" alt="avatar"><i data-eva="radio-button-on"></i></div>
-											<div class="content">
-												<h5>KiWY.WRAP</h5>
-												<span style="font-size:9px">KiWYvE9ebmRsfxaxU3wn1QetRgyVZzWRAP</span>
+											<div class="status">
+												<img :src="'http://localhost:11673/avatar/' + user.address" alt="avatar"><i data-eva="radio-button-on"></i>
 											</div>
-											<div class="icon"><i data-eva="person"></i></div>
+											<div class="content">
+												<h5>{{ user.nickname }}</h5>
+												<span style="font-size:9px">{{ user.address }}</span>
+											</div>
 										</a>
 									</li>
 								</ul>
@@ -222,7 +223,7 @@
 								<div class="middle" id="scroll">
 									<div class="container">
 										<ul>
-											<li v-for="line in chat.discussion">
+											<li v-bind:class="{ me: line.is_mine }" v-for="line in chat.discussion">
 												<img :src="'http://localhost:11673/avatar/' + line.address" alt="avatar">
 												<div class="content">
 													<div class="message">
@@ -230,7 +231,7 @@
 															<p>{{ line.message.message }}</p>
 														</div>
 													</div>
-													<span>{{ line.received_at }}</span>
+													<span>{{ line.nickname }}<br><strong>at</strong> {{ line.received_at }}</span>
 												</div>
 											</li>
 										</ul>
@@ -238,8 +239,8 @@
 								</div>
 								<div class="container">
 									<div class="bottom">
-										<form>
-											<textarea class="form-control" placeholder="Type message..." rows="1"></textarea>
+										<form onsubmit="return false" v-on:submit="sendMessage">
+											<input class="form-control" v-model="message" placeholder="Type message...">
 											<button type="submit" class="btn prepend"><i data-eva="paper-plane"></i></button>
 										</form>
 									</div>
