@@ -38,11 +38,13 @@ class Api {
             api.get('/messages/public', (req, res) => __awaiter(this, void 0, void 0, function* () {
                 var db = new PouchDB('messages');
                 let dbstore = yield db.allDocs();
+                var signatures = [];
                 var messages = [];
                 for (var i = 0; i < dbstore.rows.length; i++) {
                     var check = dbstore.rows[i];
                     var message = yield db.get(check.id);
-                    if (message.type === 'public') {
+                    if (message.type === 'public' && signatures.indexOf(message.signature) === -1) {
+                        signatures.push(message.signature);
                         delete message._id;
                         delete message._rev;
                         message.message = JSON.parse(message.message);
@@ -50,7 +52,7 @@ class Api {
                     }
                 }
                 messages.sort(function (a, b) {
-                    return parseFloat(a.timestamp) - parseFloat(b.timestamp);
+                    return parseFloat(a.message.timestamp) - parseFloat(b.message.timestamp);
                 });
                 res.send(messages);
             }));

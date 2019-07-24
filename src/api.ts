@@ -30,12 +30,14 @@ export default class Api {
         api.get('/messages/public', async (req,res) => {
             var db = new PouchDB('messages')
             let dbstore = await db.allDocs()
+            var signatures = []
             var messages = []
             for(var i = 0; i < dbstore.rows.length; i++){
                 var check = dbstore.rows[i]
                 var message = await db.get(check.id)
                 
-                if(message.type === 'public'){
+                if(message.type === 'public' && signatures.indexOf(message.signature) === -1){
+                    signatures.push(message.signature)
                     delete message._id
                     delete message._rev
                     message.message = JSON.parse(message.message)
@@ -43,7 +45,7 @@ export default class Api {
                 }
             }
             messages.sort(function(a, b) {
-                return parseFloat(a.timestamp) - parseFloat(b.timestamp);
+                return parseFloat(a.message.timestamp) - parseFloat(b.message.timestamp);
             });
             res.send(messages)
         })
