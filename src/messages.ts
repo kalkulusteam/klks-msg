@@ -100,7 +100,6 @@ export default class Messages {
     static async processMessage(protocol, data){
         try{
             var received = data
-            console.log(received)
             Identity.verifySign(received.pubKey, received.signature, received['message']).then(async signature => {
               if(signature === true){
                 var blocked = await Identity.isBlocked(received['address'])

@@ -92,7 +92,7 @@ class Api {
                         identity_1.default.signWithKey(identity['wallet']['prv'], JSON.stringify(toBroadcast)).then(signature => {
                             signature['message'] = JSON.stringify(toBroadcast);
                             signature['type'] = 'public';
-                            messages_1.default.broadcast('message', JSON.stringify(signature));
+                            messages_1.default.broadcast('message', signature);
                             //Messages.store(signature,'public')
                             res.send(signature);
                         });
@@ -111,7 +111,7 @@ class Api {
                             identity_1.default.signWithKey(identity['wallet']['prv'], JSON.stringify(toBroadcastEncrypted)).then(signature => {
                                 signature['message'] = JSON.stringify(toBroadcastEncrypted);
                                 signature['type'] = 'private';
-                                messages_1.default.broadcast('message', JSON.stringify(signature));
+                                messages_1.default.broadcast('message', signature);
                                 res.send(signature);
                             });
                         }

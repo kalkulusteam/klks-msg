@@ -46,11 +46,11 @@ export default class P2P {
         
                             //PROTOCOLS
                             global['nodes'][bootstrap[k]].on('message', function (data) {
-                                console.log('Received message from outer space.')
+                                Utilities.log('Received message from outer space.')
                                 Messages.processMessage('message', data)
                             })
                             global['nodes'][bootstrap[k]].on('pubkey', function (data) {
-                                console.log('Received pubkey message from outer space.')
+                                Utilities.log('Received pubkey message from outer space.')
                                 Messages.processMessage('pubkey', data)
                             })
                         }
@@ -59,28 +59,25 @@ export default class P2P {
             }
 
             if(argv.server){
+                //INIT SOCKETIO SERVER
                 let p2pport = await getPort({port: config.P2P_PORT})
-                console.log('Starting P2P server on port ' + p2pport)
+                Utilities.log('Starting P2P server on port ' + p2pport)
                 server.listen(config.P2P_PORT);
                 global['io'].server.on('connection', function (socket) {
-                    Utilities.log('Peer connected.')
+                    Utilities.log('New peer connected.')
 
+                    //PROTOCOLS
                     socket.on('message', function (data) {
                         Utilities.log('Relaying received message to peers...');
-                        if(config.DEBUG === true){
-                            console.log(data)
-                        }
                         Messages.relayMessage(data)
                     })
 
                     socket.on('pubkey', function (data) {
                         Utilities.log('Relaying received pubkey to peers...');
-                        if(config.DEBUG === true){
-                            console.log(data)
-                        }
                         Messages.relayPubkey(data)
                     })
-                    
+
+                    //TODO: check if peer can act as server, then relay information to all the peers.
                 });
             }
 
