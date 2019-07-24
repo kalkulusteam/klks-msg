@@ -4,6 +4,8 @@ import Identity from './identity'
 global['relayed'] = []
 const config = require('./config.json')
 import Encryption from './encryption'
+import Utilities from './utilities';
+var argv = require('minimist')(process.argv.slice(2))
 
 export default class Messages {
     static async store(received, type) {
@@ -17,7 +19,7 @@ export default class Messages {
             received.type = type
 
             if(dbcheck.rows.length === 0){
-                console.log('Saving new message to local database...')
+                Utilities.log('Saving new message to local database...')
                 await db.post(received)
             }else{
                 var found = false
@@ -30,9 +32,9 @@ export default class Messages {
                 }
                 if(found === false){
                     await db.post(received)
-                    console.log('Saved new message.')
+                    Utilities.log('Saved new message.')
                 }else{
-                    console.log('Message '+ message.signature +' is stored yet')
+                    Utilities.log('Message '+ message.signature +' is stored yet')
                 }
             }
             response(true)
@@ -40,15 +42,19 @@ export default class Messages {
     }
 
     static async broadcast(protocol, message) {
-        //console.log('Broadcasting to network..')
+        //Utilities.log('Broadcasting to network..')
         for (let id in global['nodes']) {
             global['nodes'][id].emit(protocol, message)
         }
-        //console.log('Broadcast end.')
+        if(argv.server){
+            global['io'].server.sockets.emit(protocol, message);
+            Utilities.log('Broadcast to every connected client..')
+        }
+        //Utilities.log('Broadcast end.')
     }
 
     static async broadcastPubKey() {
-        console.log('Broadcasting RSA public key to peers...')
+        Utilities.log('Broadcasting RSA public key to peers...')
         let identity = await Identity.load()
         var publicKey = identity['rsa']['pub']
         var message = publicKey
@@ -59,7 +65,7 @@ export default class Messages {
     }
     
     static async relayMessages(){
-        console.log('Relaying received messages to peers...')
+        Utilities.log('Relaying stored messages to peers...')
         var db = new PouchDB('messages')
         let dbstore = await db.allDocs()
         for(var i = 0; i < dbstore.rows.length; i++){
@@ -79,7 +85,7 @@ export default class Messages {
     }
 
     static async relayMessage(message){
-        console.log('Relaying message to peers...')
+        Utilities.log('Relaying message to peers...')
         if(global['relayed'].indexOf(message.signature) === -1){
             global['relayed'].push(message.signature)
             Messages.broadcast('message',JSON.stringify(message))
@@ -87,7 +93,7 @@ export default class Messages {
     }
 
     static async relayPubkey(key){
-        console.log('Relaying pubkey to peers...')
+        Utilities.log('Relaying pubkey to peers...')
         Messages.broadcast('pubkey', key)
     }
 
@@ -98,7 +104,7 @@ export default class Messages {
               if(signature === true){
                 var blocked = await Identity.isBlocked(received['address'])
                 if(blocked === false){
-                  console.log('Received valid message from ' + received['address'] + '.')
+                  Utilities.log('Received valid message from ' + received['address'] + '.')
                   Messages.relayMessage(received)
                   if(protocol === 'pubkey'){
                     Identity.store({
@@ -109,9 +115,9 @@ export default class Messages {
                     var decrypted = await Encryption.decryptMessage(received['message'])
                     if(decrypted !== false){
                         Messages.store(received, 'private')
-                        console.log('\x1b[32m%s\x1b[0m', 'Received SAFU message from ' + received['address'])
+                        Utilities.log('Received SAFU message from ' + received['address'])
                     }else if(received['type'] === 'public'){
-                        console.log('\x1b[32m%s\x1b[0m', 'Received public message from ' + received['address'])
+                        Utilities.log('Received public message from ' + received['address'])
                         Messages.store(received, 'public')
                     }
                   }
@@ -120,7 +126,7 @@ export default class Messages {
             })
           }catch(e){
             if(config.DEBUG === true){
-              console.log('Received unsigned data, ignoring.')
+              Utilities.log('Received unsigned data, ignoring.')
             }
           }
     }

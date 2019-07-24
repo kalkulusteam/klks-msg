@@ -14,9 +14,9 @@ const messages_1 = require("./messages");
 const config = require('./config.json');
 var app = require('express')();
 var server = require('http').Server(app);
-let io = { server: null, client: null };
-io.server = require('socket.io')(server);
-io.client = require('socket.io-client');
+global['io'] = { server: null, client: null };
+global['io'].server = require('socket.io')(server);
+global['io'].client = require('socket.io-client');
 const getPort = require('get-port');
 var dns = require('dns');
 const publicIp = require('public-ip');
@@ -40,7 +40,7 @@ class P2P {
                             return __awaiter(this, void 0, void 0, function* () {
                                 let publicip = yield publicIp.v4();
                                 if (ip !== publicip) {
-                                    global['nodes'][bootstrap[k]] = io.client.connect(bootstrap[k], { reconnect: true });
+                                    global['nodes'][bootstrap[k]] = global['io'].client.connect(bootstrap[k], { reconnect: true });
                                     global['nodes'][bootstrap[k]].on('connect', function () {
                                         utilities_1.default.log('Connected to peer: ' + global['nodes'][bootstrap[k]].io.uri);
                                         global['connected'][bootstrap[k]] = true;
@@ -51,9 +51,11 @@ class P2P {
                                     });
                                     //PROTOCOLS
                                     global['nodes'][bootstrap[k]].on('message', function (data) {
+                                        console.log('Received message');
                                         messages_1.default.processMessage('message', data);
                                     });
                                     global['nodes'][bootstrap[k]].on('pubkey', function (data) {
+                                        console.log('Received pubkey message');
                                         messages_1.default.processMessage('pubkey', data);
                                     });
                                 }
@@ -65,17 +67,17 @@ class P2P {
                     let p2pport = yield getPort({ port: config.P2P_PORT });
                     console.log('Starting P2P server on port ' + p2pport);
                     server.listen(config.P2P_PORT);
-                    io.server.on('connection', function (socket) {
+                    global['io'].server.on('connection', function (socket) {
                         utilities_1.default.log('Peer connected.');
                         socket.on('message', function (data) {
-                            utilities_1.default.log('Relaying message to peers');
+                            utilities_1.default.log('Relaying received message to peers...');
                             if (config.DEBUG === true) {
                                 console.log(data);
                             }
                             messages_1.default.relayMessage(data);
                         });
                         socket.on('pubkey', function (data) {
-                            utilities_1.default.log('Relaying pubkey to peers...');
+                            utilities_1.default.log('Relaying received pubkey to peers...');
                             if (config.DEBUG === true) {
                                 console.log(data);
                             }

@@ -6,9 +6,9 @@ import { getPriority } from 'os';
 const config = require('./config.json')
 var app = require('express')()
 var server = require('http').Server(app)
-let io = {server: null, client: null}
-io.server = require('socket.io')(server)
-io.client = require('socket.io-client')
+global['io'] = {server: null, client: null}
+global['io'].server = require('socket.io')(server)
+global['io'].client = require('socket.io-client')
 const getPort = require('get-port')
 var dns = require('dns')
 const publicIp = require('public-ip');
@@ -34,7 +34,7 @@ export default class P2P {
                     dns.lookup(lookupURL, async function onLookup(err, ip, family) {
                         let publicip = await publicIp.v4()
                         if(ip !== publicip){
-                            global['nodes'][bootstrap[k]] = io.client.connect(bootstrap[k], {reconnect: true})
+                            global['nodes'][bootstrap[k]] = global['io'].client.connect(bootstrap[k], {reconnect: true})
                             global['nodes'][bootstrap[k]].on('connect', function () {
                                 Utilities.log('Connected to peer: ' + global['nodes'][bootstrap[k]].io.uri)
                                 global['connected'][bootstrap[k]] = true
@@ -46,9 +46,11 @@ export default class P2P {
         
                             //PROTOCOLS
                             global['nodes'][bootstrap[k]].on('message', function (data) {
-                            Messages.processMessage('message', data)
+                                console.log('Received message')
+                                Messages.processMessage('message', data)
                             })
                             global['nodes'][bootstrap[k]].on('pubkey', function (data) {
+                                console.log('Received pubkey message')
                                 Messages.processMessage('pubkey', data)
                             })
                         }
@@ -60,11 +62,11 @@ export default class P2P {
                 let p2pport = await getPort({port: config.P2P_PORT})
                 console.log('Starting P2P server on port ' + p2pport)
                 server.listen(config.P2P_PORT);
-                io.server.on('connection', function (socket) {
+                global['io'].server.on('connection', function (socket) {
                     Utilities.log('Peer connected.')
 
                     socket.on('message', function (data) {
-                        Utilities.log('Relaying message to peers');
+                        Utilities.log('Relaying received message to peers...');
                         if(config.DEBUG === true){
                             console.log(data)
                         }
@@ -72,13 +74,13 @@ export default class P2P {
                     })
 
                     socket.on('pubkey', function (data) {
-                        Utilities.log('Relaying pubkey to peers...');
+                        Utilities.log('Relaying received pubkey to peers...');
                         if(config.DEBUG === true){
                             console.log(data)
                         }
                         Messages.relayPubkey(data)
                     })
-
+                    
                 });
             }
 

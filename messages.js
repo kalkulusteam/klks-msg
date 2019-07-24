@@ -14,6 +14,8 @@ const identity_1 = require("./identity");
 global['relayed'] = [];
 const config = require('./config.json');
 const encryption_1 = require("./encryption");
+const utilities_1 = require("./utilities");
+var argv = require('minimist')(process.argv.slice(2));
 class Messages {
     static store(received, type) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -26,7 +28,7 @@ class Messages {
                 received.timestamp = d.getTime();
                 received.type = type;
                 if (dbcheck.rows.length === 0) {
-                    console.log('Saving new message to local database...');
+                    utilities_1.default.log('Saving new message to local database...');
                     yield db.post(received);
                 }
                 else {
@@ -40,10 +42,10 @@ class Messages {
                     }
                     if (found === false) {
                         yield db.post(received);
-                        console.log('Saved new message.');
+                        utilities_1.default.log('Saved new message.');
                     }
                     else {
-                        console.log('Message ' + message.signature + ' is stored yet');
+                        utilities_1.default.log('Message ' + message.signature + ' is stored yet');
                     }
                 }
                 response(true);
@@ -52,16 +54,20 @@ class Messages {
     }
     static broadcast(protocol, message) {
         return __awaiter(this, void 0, void 0, function* () {
-            //console.log('Broadcasting to network..')
+            //Utilities.log('Broadcasting to network..')
             for (let id in global['nodes']) {
                 global['nodes'][id].emit(protocol, message);
             }
-            //console.log('Broadcast end.')
+            if (argv.server) {
+                global['io'].server.sockets.emit(protocol, message);
+                utilities_1.default.log('Broadcast to every connected client..');
+            }
+            //Utilities.log('Broadcast end.')
         });
     }
     static broadcastPubKey() {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log('Broadcasting RSA public key to peers...');
+            utilities_1.default.log('Broadcasting RSA public key to peers...');
             let identity = yield identity_1.default.load();
             var publicKey = identity['rsa']['pub'];
             var message = publicKey;
@@ -73,7 +79,7 @@ class Messages {
     }
     static relayMessages() {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log('Relaying received messages to peers...');
+            utilities_1.default.log('Relaying stored messages to peers...');
             var db = new PouchDB('messages');
             let dbstore = yield db.allDocs();
             for (var i = 0; i < dbstore.rows.length; i++) {
@@ -94,7 +100,7 @@ class Messages {
     }
     static relayMessage(message) {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log('Relaying message to peers...');
+            utilities_1.default.log('Relaying message to peers...');
             if (global['relayed'].indexOf(message.signature) === -1) {
                 global['relayed'].push(message.signature);
                 Messages.broadcast('message', JSON.stringify(message));
@@ -103,7 +109,7 @@ class Messages {
     }
     static relayPubkey(key) {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log('Relaying pubkey to peers...');
+            utilities_1.default.log('Relaying pubkey to peers...');
             Messages.broadcast('pubkey', key);
         });
     }
@@ -115,7 +121,7 @@ class Messages {
                     if (signature === true) {
                         var blocked = yield identity_1.default.isBlocked(received['address']);
                         if (blocked === false) {
-                            console.log('Received valid message from ' + received['address'] + '.');
+                            utilities_1.default.log('Received valid message from ' + received['address'] + '.');
                             Messages.relayMessage(received);
                             if (protocol === 'pubkey') {
                                 identity_1.default.store({
@@ -127,10 +133,10 @@ class Messages {
                                 var decrypted = yield encryption_1.default.decryptMessage(received['message']);
                                 if (decrypted !== false) {
                                     Messages.store(received, 'private');
-                                    console.log('\x1b[32m%s\x1b[0m', 'Received SAFU message from ' + received['address']);
+                                    utilities_1.default.log('Received SAFU message from ' + received['address']);
                                 }
                                 else if (received['type'] === 'public') {
-                                    console.log('\x1b[32m%s\x1b[0m', 'Received public message from ' + received['address']);
+                                    utilities_1.default.log('Received public message from ' + received['address']);
                                     Messages.store(received, 'public');
                                 }
                             }
@@ -140,7 +146,7 @@ class Messages {
             }
             catch (e) {
                 if (config.DEBUG === true) {
-                    console.log('Received unsigned data, ignoring.');
+                    utilities_1.default.log('Received unsigned data, ignoring.');
                 }
             }
         });
