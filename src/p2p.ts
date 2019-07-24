@@ -6,7 +6,7 @@ import { getPriority } from 'os';
 const config = require('./config.json')
 var app = require('express')()
 var server = require('http').Server(app)
-global['io'] = { server: null, client: null }
+global['io'] = { server: null, client: null, sockets: {} }
 global['io'].server = require('socket.io')(server)
 const getPort = require('get-port')
 var dns = require('dns')
@@ -66,7 +66,7 @@ export default class P2P {
                 server.listen(config.P2P_PORT);
                 global['io'].server.on('connection', function (socket) {
                     Utilities.log('New peer connected: ' + socket.id)
-
+                    global['io'].sockets[socket.id] = socket
                     //PROTOCOLS
                     socket.on('message', function (data) {
                         Utilities.log('Relaying received message to peers...');

@@ -66,7 +66,7 @@ export default class Messages {
                 global['io'].server.sockets.emit(protocol, message)
                 Utilities.log('Broadcast to every connected client..')
             }else{
-                global['io'].server.sockets.emit(protocol, message)
+                global['io'].sockets[socketID].emit(protocol, message)
                 Utilities.log('Broadcast to client ' + socketID)
             }
         }

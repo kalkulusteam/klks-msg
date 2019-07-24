@@ -77,7 +77,7 @@ class Messages {
                     utilities_1.default.log('Broadcast to every connected client..');
                 }
                 else {
-                    global['io'].server.sockets.emit(protocol, message);
+                    global['io'].sockets[socketID].emit(protocol, message);
                     utilities_1.default.log('Broadcast to client ' + socketID);
                 }
             }
