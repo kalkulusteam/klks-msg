@@ -90,10 +90,8 @@ export default class Messages {
             for(var k in global['connected']){
                 let connected = global['connected'][k]
                 if(connected === true){
-                    if(global['broadcasted']['nodes'].indexOf(k) === -1){
-                        global['broadcasted']['nodes'].push(k)
-                        Messages.broadcast('pubkey', signature, '', k)
-                    }
+                    Messages.broadcast('pubkey', signature, '', k)
+                    Utilities.log('Broadcasting pubkey to ' + k)
                 }
                 global['io'].server.sockets.clients((error, clients) => {
                     for(var k in clients){
@@ -190,6 +188,7 @@ export default class Messages {
                 if(global['relayed']['keys'][client].indexOf(key.signature) === -1){
                     global['relayed']['keys'][client].push(key.signature)
                     Messages.broadcast('pubkey', key, client)
+                    Utilities.log('Broadcasted pubkey to ' + client)
                 }
             }
         })
@@ -210,8 +209,13 @@ export default class Messages {
                         pubkey: received['message']
                     })
                   }else if(protocol === 'message'){
-                    var jsonmsg = JSON.parse(received['message'])
-                    var decrypted = await Encryption.decryptMessage(jsonmsg['message'])
+                      var decrypted
+                    try{
+                        var jsonmsg = JSON.parse(received['message'])
+                        decrypted = await Encryption.decryptMessage(jsonmsg['message'])
+                    }catch(e){
+                        decrypted = false
+                    }
                     if(decrypted !== false){
                         Messages.store(received, 'private')
                         Utilities.log('Received SAFU message from ' + received['address'])

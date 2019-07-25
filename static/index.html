@@ -18,7 +18,7 @@
 				<div class="container">
 					<a href="#" class="logo" rel="home"><img src="./assets/img/favicon.png" alt="logo"></a>
 					<ul class="nav" role="tablist">
-						<li><a href="#conversations" class="active" data-toggle="tab" role="tab" aria-controls="conversations" aria-selected="true"><i data-eva="message-square" data-eva-animation="pulse"></i></a></li>
+						<li><a href="#conversations" v-on:click="getDiscussions()" class="active" data-toggle="tab" role="tab" aria-controls="conversations" aria-selected="true"><i data-eva="message-square" data-eva-animation="pulse"></i></a></li>
 						<li v-on:click="updateContacts()"><a href="#friends" data-toggle="tab" role="tab" aria-controls="friends" aria-selected="false"><i data-eva="people" data-eva-animation="pulse"></i></a></li>
 						<!--<li><a href="#notifications" data-toggle="tab" role="tab" aria-controls="notifications" aria-selected="false"><i data-eva="bell" data-eva-animation="pulse"></i></a></li>-->
 						<li><a href="#settings" data-toggle="tab" role="tab" aria-controls="settings" aria-selected="false"><i data-eva="settings" data-eva-animation="pulse"></i></a></li>
@@ -34,8 +34,8 @@
 						<!-- Start of Discussions -->
 						<div class="tab-pane show active" id="conversations" role="tabpanel">
 							<div class="top">
-								<form>
-									<input type="search" class="form-control" placeholder="Search">
+								<form onsubmit="return false">
+									<input type="search" v-model="searchDiscussions" class="form-control" placeholder="Search">
 									<button type="submit" class="btn prepend"><i data-eva="search"></i></button>
 								</form>
 							</div>
@@ -54,8 +54,8 @@
 											</div>
 										</a>
 									</li>
-									<li v-for="discussion in discussions">
-										<a href="#chat1" v-on:click="loadDiscussion('address',discussion.address)" class="filter direct" data-chat="open" data-toggle="tab" role="tab" aria-controls="chat1" aria-selected="true">
+									<li v-for="discussion in filteredDiscussions">
+										<a href="#chat1" v-on:click="loadDiscussion('address',discussion.address);getChatInfo()" class="filter direct" data-chat="open" data-toggle="tab" role="tab" aria-controls="chat1" aria-selected="true">
 											<div class="status">
 												<img :src="'http://localhost:11673/avatar/' + discussion.address" alt="avatar">
 											</div>
@@ -74,8 +74,8 @@
 						<!-- Start of Friends -->
 						<div class="tab-pane" id="friends" role="tabpanel">
 							<div class="top">
-								<form>
-									<input type="search" class="form-control" placeholder="Search">
+								<form onsubmit="return false">
+									<input type="search" v-model="searchUsers" class="form-control" placeholder="Search">
 									<button type="submit" class="btn prepend"><i data-eva="search"></i></button>
 								</form>
 							</div>
@@ -83,8 +83,8 @@
 								<h4>Users</h4>
 								<hr>
 								<ul class="users">
-									<li v-for="user in users">
-										<a href="#" v-on:click="loadDiscussion('address',user.address)">
+									<li v-for="user in filteredUsers">
+										<a href="#" v-on:click="loadDiscussion('address',user.address);getChatInfo()">
 											<div class="status">
 												<img :src="'http://localhost:11673/avatar/' + user.address" alt="avatar">
 											</div>
@@ -107,20 +107,20 @@
 									<a href="#" class="headline" data-toggle="collapse" aria-expanded="false" data-target="#account" aria-controls="account">
 										<div class="title">
 											<h5>Identity</h5>
-											<p>You KLKS identity</p>
+											<p>Download your identity payload, you will be able to recover your account later. Copy and paste it in a safe place.</p>
 										</div>
 										<i data-eva="arrow-ios-forward"></i>
 										<i data-eva="arrow-ios-downward"></i>
 									</a>
 									<div class="content collapse" id="account" data-parent="#preferences">
 										<div class="inside">
-											<form class="account">
-												<div class="form-group">
-													<label>Private Key</label>
-													<input type="password" class="form-control" placeholder="Enter your private key">
-												</div>
-												<button type="submit" class="btn primary">Save identity</button>
+											<pre v-if="identity" id="identity" style="color:#fff; background:#666; border-radius:5px; padding: 5px">{{ identity }}</pre>
+											<form v-if="!identity" onsubmit="return false" class="account">
+												<button v-on:click="showIdentity" type="submit" class="btn primary">Show identity keys</button>
 											</form>
+											<form v-if="identity" onsubmit="return false" class="account">
+													<button v-on:click="copyIdentity" type="submit" class="btn primary">Copy identity keys</button>
+												</form>
 										</div>
 									</div>
 								</li>
@@ -139,18 +139,13 @@
 										<div class="inside">
 											<ul class="options">
 												<li>
-													<div class="headline">
-														<h5>History</h5>
-														<label class="switch">
-															<input type="checkbox" checked>
-															<span class="slider round"></span>
-														</label>
-													</div>
-													<p>If you disable history no message will be stored on local disk.</p>
-												</li>
-												<li>
-													<p>By renewing your keys you (and no-one else) won't be able to decrypt message sent by other users. Proceed at your own risk.</p>
-													<button type="submit" class="btn primary">Renew public and private keys</button>
+													<p>
+														By renewing your keys you (and no-one else) won't be able to decrypt message sent by you to other users.
+														You won't be able to recover the identity unless you've done a backup, do it if you didn't have done yet.
+														<br>Proceed at your own risk.
+													</p><br>
+													<button v-if="!renewConfirm" v-on:click="confirmRenew()" type="submit" class="btn primary">Renew public and private keys</button>
+													<button v-if="renewConfirm" v-on:click="renewKeys()" type="submit" class="btn primary">I'm 100% sure!</button>
 												</li>
 											</ul>
 										</div>
@@ -210,13 +205,11 @@
 										</div>
 										<ul>
 											<li>
-												
 												<button type="button" class="btn" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><i data-eva="more-vertical" data-eva-animation="pulse"></i></button>
 												<div class="dropdown-menu">
 													<!--<button type="button" class="dropdown-item" data-toggle="modal" data-target="#compose"><i data-eva="person-add"></i>Add people</button>-->
-													<button type="button" class="dropdown-item" data-utility="open"><i data-eva="info"></i>Informations</button>
-													<button type="button" class="dropdown-item" data-utility="open"><i data-eva="archive-outline"></i>Delete chat</button>
-													<button type="button" class="dropdown-item" data-utility="open"><i data-eva="minus-circle-outline"></i>Block user</button>
+													<button type="button" v-on:click="getChatInfo()" class="dropdown-item" data-utility="open"><i data-eva="info"></i>Informations</button>
+													<button type="button" v-on:click="confirmBlock()" v-if="chat.receiver !== 'public'" class="dropdown-item" data-utility="open"><i data-eva="minus-circle-outline"></i>Block user</button>
 												</div>
 											</li>
 										</ul>
@@ -257,7 +250,14 @@
 											<h4>Connection info</h4>
 											<hr>
 											<p style="margin-top:15px;">
-												Informations regarding this communcation. 
+												<strong>Address:</strong><br>{{ chat.info.address }} ({{ chat.info.balance }} KLKS)<br>
+												<strong>State:</strong><br>
+												<span v-if="chat.info.blocked">Blocked</span><span v-if="!chat.info.blocked">Unblocked</span>
+												<strong>Local alias:</strong><br>
+												<input type="text" v-model="alias" class="form-control" placeholder="Give an alias to the user"><br>
+												<button v-on:click="updateAlias()" type="submit" class="btn primary">Update</button>
+												<br><br>
+												<strong>RSA PubKey:</strong><br>{{ chat.info.identity }}
 											</p>
 										</div>
 									</div>
@@ -274,6 +274,7 @@
 		<!-- Layout -->
 		<script>if (typeof module === 'object') {window.module = module; module = undefined;}</script>
 		<script src="./assets/js/vendor/vue.min.js"></script>
+		<script src="./assets/js/vendor/vuecopy.min.js"></script>
 		<script src="./assets/js/vendor/axios.min.js"></script>
 		<script src="./assets/js/vendor/jquery.min.js"></script>
 		<script src="./assets/js/vendor/popper.min.js"></script>

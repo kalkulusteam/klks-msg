@@ -103,10 +103,8 @@ class Messages {
                 for (var k in global['connected']) {
                     let connected = global['connected'][k];
                     if (connected === true) {
-                        if (global['broadcasted']['nodes'].indexOf(k) === -1) {
-                            global['broadcasted']['nodes'].push(k);
-                            Messages.broadcast('pubkey', signature, '', k);
-                        }
+                        Messages.broadcast('pubkey', signature, '', k);
+                        utilities_1.default.log('Broadcasting pubkey to ' + k);
                     }
                     global['io'].server.sockets.clients((error, clients) => {
                         for (var k in clients) {
@@ -206,6 +204,7 @@ class Messages {
                     if (global['relayed']['keys'][client].indexOf(key.signature) === -1) {
                         global['relayed']['keys'][client].push(key.signature);
                         Messages.broadcast('pubkey', key, client);
+                        utilities_1.default.log('Broadcasted pubkey to ' + client);
                     }
                 }
             });
@@ -228,8 +227,14 @@ class Messages {
                                 });
                             }
                             else if (protocol === 'message') {
-                                var jsonmsg = JSON.parse(received['message']);
-                                var decrypted = yield encryption_1.default.decryptMessage(jsonmsg['message']);
+                                var decrypted;
+                                try {
+                                    var jsonmsg = JSON.parse(received['message']);
+                                    decrypted = yield encryption_1.default.decryptMessage(jsonmsg['message']);
+                                }
+                                catch (e) {
+                                    decrypted = false;
+                                }
                                 if (decrypted !== false) {
                                     Messages.store(received, 'private');
                                     utilities_1.default.log('Received SAFU message from ' + received['address']);

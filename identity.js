@@ -39,6 +39,28 @@ class Identity {
             }));
         });
     }
+    static renew() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((response) => __awaiter(this, void 0, void 0, function* () {
+                var db = new PouchDB('settings');
+                let dbcheck = yield db.allDocs();
+                let identity;
+                if (dbcheck.rows.length === 0) {
+                    identity = yield Identity.create();
+                    yield db.post(identity);
+                }
+                else {
+                    let entry = dbcheck.rows[0];
+                    identity = yield db.get(entry.id);
+                    db.remove(identity);
+                    identity = yield Identity.create();
+                    yield db.post(identity);
+                    global['identity'] = identity;
+                }
+                response(identity);
+            }));
+        });
+    }
     static store(identity) {
         return __awaiter(this, void 0, void 0, function* () {
             return new Promise((response) => __awaiter(this, void 0, void 0, function* () {
@@ -107,6 +129,28 @@ class Identity {
                         var id = yield db.get(check.id);
                         if (id.address === address) {
                             found = id.pubkey;
+                        }
+                    }
+                    response(found);
+                }
+            }));
+        });
+    }
+    static user(address) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((response) => __awaiter(this, void 0, void 0, function* () {
+                var db = new PouchDB('users');
+                let dbcheck = yield db.allDocs();
+                if (dbcheck.rows.length === 0) {
+                    response(false);
+                }
+                else {
+                    var found = false;
+                    for (var i = 0; i < dbcheck.rows.length; i++) {
+                        var check = dbcheck.rows[i];
+                        var id = yield db.get(check.id);
+                        if (id.address === address) {
+                            found = id;
                         }
                     }
                     response(found);

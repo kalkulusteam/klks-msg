@@ -5,12 +5,34 @@ new Vue({
             avatar: 'http://localhost:11673/avatar/KLKSMSGPUBLICCHAT',
             name: 'Public chat',
             receiver: 'public',
-            discussion: {}
+            discussion: {},
+            info: {}
         },
         message: '',
         isSending: false,
-        users: {},
-        discussions: {}
+        users: [],
+        discussions: [],
+        searchUsers: '',
+        searchDiscussions: '',
+        identity: '',
+        renewConfirm: false,
+        alias: ''
+    },
+    computed: {
+        filteredUsers() {
+            return this.users.filter(item => {
+                if(item.nickname){
+                    return item.nickname.toLowerCase().indexOf(this.searchUsers.toLowerCase()) > -1
+                }
+            })
+        },
+        filteredDiscussions() {
+            return this.discussions.filter(item => {
+                if(item.nickname){
+                    return item.nickname.toLowerCase().indexOf(this.searchDiscussions.toLowerCase()) > -1
+                }
+            })
+        }
     },
     mounted() {
         const app = this
@@ -25,7 +47,7 @@ new Vue({
         updateContacts() {
             const app = this
             console.log('Updating contacts.')
-            app.users = {}
+            app.users = []
             setTimeout(function () {
                 axios.get('http://localhost:11673/contacts').then(response => {
                     app.users = response.data
@@ -36,6 +58,14 @@ new Vue({
             const app = this
             axios.get('http://localhost:11673/discussions').then(response => {
                 app.discussions = response.data
+            })
+        },
+        getChatInfo(){
+            const app = this
+            axios.get('http://localhost:11673/info/' + app.chat.receiver).then(response => {
+                app.chat.info = response.data
+                app.chat.name = app.chat.info.nickname
+                app.alias = app.chat.info.nickname
             })
         },
         loadDiscussion(what, id) {
@@ -58,7 +88,6 @@ new Vue({
                 
             } else {
                 app.chat.receiver = id
-                app.chat.name = id
                 app.chat.address = id
                 axios.get('http://localhost:11673/messages/address/' + id).then(response => {
                     app.chat.discussion = response.data
@@ -81,6 +110,54 @@ new Vue({
                     app.isSending = false
                 }).catch(err => {
                     app.isSending = false
+                })
+            }
+        },
+        showIdentity(){
+            const app = this
+            axios.get('http://localhost:11673/identity').then(response => {
+                app.identity = response.data
+            })
+        },
+        copyIdentity(){
+            const app = this
+            this.$copyText(JSON.stringify(app.identity)).then(function (e) {
+                console.log(e)
+            }, function (e) {
+                alert('Can not copy')
+                console.log(e)
+            })
+        },
+        confirmRenew(){
+            const app = this 
+            app.renewConfirm = true
+        },
+        renewKeys(){
+            const app = this
+            if(app.renewConfirm === true){
+                axios.delete('http://localhost:11673/identity').then(response => {
+                    app.renewConfirm = false
+                    alert('Identity renewed!')
+                })
+            }
+        },
+        updateAlias(){
+            const app = this
+            axios.post('http://localhost:11673/contacts/update',{ address: app.chat.receiver, nickname: app.alias}).then(response => {
+                alert('Contact updated!')
+            })
+        },
+        confirmBlock(){
+            const app = this
+            if (confirm("Do you want to block this user?")) {
+                axios.post('http://localhost:11673/contacts/block',{ address: app.chat.receiver}).then(response => {
+                    if(response.data.success){
+                        if(response.data.state){
+                            alert('The contact is now blocked!')
+                        }else{
+                            alert('The contact is now unblocked!')
+                        }
+                    }
                 })
             }
         }

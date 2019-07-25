@@ -20,18 +20,40 @@ const utilities_1 = require("./utilities");
 const PouchDB = require('pouchdb');
 PouchDB.plugin(require('pouchdb-find'));
 const getPort = require('get-port');
+const axios = require('axios');
+var argv = require('minimist')(process.argv.slice(2));
 var messages = [];
 var relayed = [];
 class Api {
     static init() {
         return __awaiter(this, void 0, void 0, function* () {
+            //CHECK FOR LOCK FILES
             var lockfiles = ['./settings/LOCK', './messages/LOCK', './messages/LOCK'];
             for (var l in lockfiles) {
                 if (fs.existsSync(lockfiles[l])) {
                     fs.unlinkSync(lockfiles[l]);
                 }
             }
+            //CHECK FOR LOG FILE TOO BIG
+            const stats = fs.statSync("./log");
+            const fileSizeInBytes = stats.size;
+            const fileSizeInMegabytes = fileSizeInBytes / 1000000.0;
+            if (fileSizeInMegabytes > 25) {
+                fs.unlinkSync('./log');
+            }
             let apiport = yield getPort({ port: config.API_PORT });
+            if (!argv.server) {
+                api.get('/identity', (req, res) => __awaiter(this, void 0, void 0, function* () {
+                    let identity = yield identity_1.default.load();
+                    delete identity['_id'];
+                    delete identity['_rev'];
+                    res.send(identity);
+                }));
+                api.delete('/identity', (req, res) => __awaiter(this, void 0, void 0, function* () {
+                    yield identity_1.default.renew();
+                    res.send(true);
+                }));
+            }
             api.get('/avatar/:hash', (req, res) => {
                 var data = new Identicon(req.params.hash, 420).toString();
                 var img = Buffer.from(data, 'base64');
@@ -113,6 +135,18 @@ class Api {
                     return parseFloat(a.message.timestamp) - parseFloat(b.message.timestamp);
                 });
                 res.send(messages);
+            }));
+            api.get('/info/:address', (req, res) => __awaiter(this, void 0, void 0, function* () {
+                let info = {};
+                let contacts = yield identity_1.default.contacts();
+                info['nickname'] = contacts[req.params.address];
+                let identity = yield identity_1.default.user(req.params.address);
+                info['identity'] = identity['pubkey'];
+                info['blocked'] = identity['blocked'];
+                info['address'] = req.params.address;
+                let balance = yield axios.get('https://chainz.cryptoid.info/klks/api.dws?q=getbalance&a=' + req.params.address);
+                info['balance'] = balance.data;
+                res.send(info);
             }));
             api.get('/messages/address/:address', (req, res) => __awaiter(this, void 0, void 0, function* () {
                 var db = new PouchDB('messages');
@@ -286,12 +320,12 @@ class Api {
                     var db = new PouchDB('users');
                     let dbcheck = yield db.allDocs();
                     let success = false;
+                    var blocked;
                     for (var i = 0; i < dbcheck.rows.length; i++) {
                         var check = dbcheck.rows[i];
                         var id = yield db.get(check.id);
                         if (id.address === body['body'].address) {
                             success = true;
-                            let blocked;
                             if (id.blocked === false || id.blocked === undefined) {
                                 blocked = true;
                             }
@@ -314,7 +348,8 @@ class Api {
                         }
                     }
                     res.send({
-                        success: success
+                        success: success,
+                        state: blocked
                     });
                 }
                 else {

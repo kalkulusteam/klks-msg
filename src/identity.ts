@@ -30,6 +30,26 @@ export default class Identity {
         })
     }
 
+    static async renew() {
+        return new Promise(async response => {
+            var db = new PouchDB('settings');
+            let dbcheck = await db.allDocs()
+            let identity
+            if (dbcheck.rows.length === 0) {
+                identity = await Identity.create()
+                await db.post(identity)
+            } else {
+                let entry = dbcheck.rows[0]
+                identity = await db.get(entry.id)
+                db.remove(identity)
+                identity = await Identity.create()
+                await db.post(identity)
+                global['identity'] = identity
+            }
+            response(identity)
+        })
+    }
+
     static async store(identity) {
         return new Promise(async response => {
             var db = new PouchDB('users')
@@ -92,6 +112,26 @@ export default class Identity {
                     var id = await db.get(check.id)
                     if (id.address === address) {
                         found = id.pubkey
+                    }
+                }
+                response(found)
+            }
+        })
+    }
+
+    static async user(address) {
+        return new Promise(async response => {
+            var db = new PouchDB('users')
+            let dbcheck = await db.allDocs()
+            if (dbcheck.rows.length === 0) {
+                response(false)
+            } else {
+                var found = false
+                for (var i = 0; i < dbcheck.rows.length; i++) {
+                    var check = dbcheck.rows[i]
+                    var id = await db.get(check.id)
+                    if (id.address === address) {
+                        found = id
                     }
                 }
                 response(found)

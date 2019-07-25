@@ -10,13 +10,15 @@ import Utilities from './utilities'
 const PouchDB = require('pouchdb')
 PouchDB.plugin(require('pouchdb-find'))
 const getPort = require('get-port')
+const axios = require('axios')
+var argv = require('minimist')(process.argv.slice(2))
 
 var messages = []
 var relayed = []
 
 export default class Api {
     static async init() {
-
+        //CHECK FOR LOCK FILES
         var lockfiles = ['./settings/LOCK', './messages/LOCK', './messages/LOCK']
         for (var l in lockfiles) {
             if (fs.existsSync(lockfiles[l])) {
@@ -24,7 +26,29 @@ export default class Api {
             }
         }
 
+        //CHECK FOR LOG FILE TOO BIG
+        const stats = fs.statSync("./log");
+        const fileSizeInBytes = stats.size;
+        const fileSizeInMegabytes = fileSizeInBytes / 1000000.0;
+        if(fileSizeInMegabytes > 25){
+            fs.unlinkSync('./log')
+        }
+
         let apiport = await getPort({ port: config.API_PORT })
+
+        if (!argv.server) {
+            api.get('/identity', async (req, res) => {
+                let identity = await Identity.load()
+                delete identity['_id']
+                delete identity['_rev']
+                res.send(identity)
+            })
+            api.delete('/identity', async (req, res) => {
+                await Identity.renew()
+                res.send(true)
+            })
+        }
+
         api.get('/avatar/:hash', (req, res) => {
             var data = new Identicon(req.params.hash, 420).toString();
             var img = Buffer.from(data, 'base64');
@@ -111,6 +135,19 @@ export default class Api {
                 return parseFloat(a.message.timestamp) - parseFloat(b.message.timestamp);
             });
             res.send(messages)
+        })
+
+        api.get('/info/:address', async (req, res) => {
+            let info = {}
+            let contacts = await Identity.contacts()
+            info['nickname'] = contacts[req.params.address]
+            let identity = await Identity.user(req.params.address)
+            info['identity'] = identity['pubkey']
+            info['blocked'] = identity['blocked']
+            info['address'] = req.params.address
+            let balance = await axios.get('https://chainz.cryptoid.info/klks/api.dws?q=getbalance&a=' + req.params.address)
+            info['balance'] = balance.data
+            res.send(info)
         })
 
         api.get('/messages/address/:address', async (req, res) => {
@@ -286,12 +323,12 @@ export default class Api {
                 var db = new PouchDB('users')
                 let dbcheck = await db.allDocs()
                 let success = false
+                var blocked
                 for (var i = 0; i < dbcheck.rows.length; i++) {
                     var check = dbcheck.rows[i]
                     var id = await db.get(check.id)
                     if (id.address === body['body'].address) {
                         success = true
-                        let blocked
                         if (id.blocked === false || id.blocked === undefined) {
                             blocked = true
                         } else {
@@ -312,7 +349,8 @@ export default class Api {
                     }
                 }
                 res.send({
-                    success: success
+                    success: success,
+                    state: blocked
                 })
             } else {
                 res.send({

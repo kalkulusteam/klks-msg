@@ -48,11 +48,11 @@ export default class P2P {
 
                         //PROTOCOLS
                         global['nodes'][bootstrap[k]].on('message', function (data) {
-                            Utilities.log('Received message from outer space.')
+                            Utilities.log('Received message from outer space!')
                             Messages.processMessage('message', data)
                         })
                         global['nodes'][bootstrap[k]].on('pubkey', function (data) {
-                            Utilities.log('Received pubkey from outer space.')
+                            Utilities.log('Received pubkey from outer space!')
                             Messages.processMessage('pubkey', data)
                         })
                     }
