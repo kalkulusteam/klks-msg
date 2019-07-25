@@ -35,9 +35,10 @@ class Messages {
                 received.received_at = n;
                 received.timestamp = d.getTime();
                 received.type = type;
+                received._id = received.signature;
                 if (dbcheck.rows.length === 0) {
-                    utilities_1.default.log('Saving new message to local database...');
-                    yield db.post(received);
+                    utilities_1.default.log('Saved new message with signature ' + received.signature + '.');
+                    yield db.put(received);
                 }
                 else {
                     var found = false;
@@ -49,8 +50,13 @@ class Messages {
                         }
                     }
                     if (found === false) {
-                        yield db.post(received);
-                        utilities_1.default.log('Saved new message.');
+                        try {
+                            yield db.put(received);
+                            utilities_1.default.log('Saved new message with signature ' + received.signature + '.');
+                        }
+                        catch (e) {
+                            utilities_1.default.log('Message with signature ' + received.signature + ' exsists yet.');
+                        }
                     }
                     else {
                         utilities_1.default.log('Message ' + message.signature + ' is stored yet');

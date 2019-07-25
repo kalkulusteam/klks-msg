@@ -8,6 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const utilities_1 = require("./utilities");
 var CoinKey = require('coinkey');
 const CryptoJS = require('crypto-js');
 const secp256k1 = require('secp256k1');
@@ -43,8 +44,9 @@ class Identity {
             return new Promise((response) => __awaiter(this, void 0, void 0, function* () {
                 var db = new PouchDB('users');
                 let dbcheck = yield db.allDocs();
+                identity._id = identity.address;
                 if (dbcheck.rows.length === 0) {
-                    yield db.post(identity);
+                    yield db.put(identity);
                     console.log('Saved new public key from ' + identity.address + '.');
                 }
                 else {
@@ -57,8 +59,13 @@ class Identity {
                         }
                     }
                     if (found === false) {
-                        yield db.post(identity);
-                        console.log('Saved new public key from ' + identity.address + '.');
+                        try {
+                            yield db.put(identity);
+                            utilities_1.default.log('Saved new public key from ' + identity.address + '.');
+                        }
+                        catch (e) {
+                            utilities_1.default.log('Identity for ' + identity.address + ' exsists yet');
+                        }
                     }
                     response(true);
                 }

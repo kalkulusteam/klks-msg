@@ -55,7 +55,7 @@ class P2P {
                                 messages_1.default.processMessage('message', data);
                             });
                             global['nodes'][bootstrap[k]].on('pubkey', function (data) {
-                                utilities_1.default.log('Received pubkey message from outer space.');
+                                utilities_1.default.log('Received pubkey from outer space.');
                                 messages_1.default.processMessage('pubkey', data);
                             });
                         }

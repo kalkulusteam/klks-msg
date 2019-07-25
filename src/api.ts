@@ -136,13 +136,22 @@ export default class Api {
             for (var i = 0; i < dbstore.rows.length; i++) {
                 var check = dbstore.rows[i]
                 var message = await db.get(check.id)
-
-                if (message.type === 'private' && message.address === req.params.address) {
+                var print = false
+                if (message.type === 'private' && (message.address === req.params.address || message.address === global['identity']['wallet']['pub'])) {
                     delete message._id
                     delete message._rev
-                    let decrypted = await Encryption.decryptMessage(message.message)
-                    message.message = decrypted
-                    messages.push(message)
+                    let parsed = JSON.parse(message.message)
+                    let decrypted = await Encryption.decryptMessage(parsed.message)
+                    let checkreceiver = decrypted.toString().split('*|*|*')
+                    if(checkreceiver[1] === undefined){
+                        message.message = decrypted
+                        messages.push(message)
+                    }else{
+                        if(checkreceiver[0] === req.params.address){
+                            message.message = checkreceiver[1]
+                            messages.push(message)
+                        }
+                    }
                 }
             }
             messages.sort(function (a, b) {
@@ -182,16 +191,28 @@ export default class Api {
                 } else {
                     let user = await Identity.find(receiver)
                     if (user !== false && user !== undefined) {
+                        let timestamp = new Date().getTime()
                         let encrypted = await Encryption.encryptMessage(message, user)
                         var toBroadcastEncrypted = {
                             message: encrypted,
-                            timestamp: new Date().getTime()
+                            timestamp: timestamp
                         }
-                        Identity.signWithKey(identity['wallet']['prv'], JSON.stringify(toBroadcastEncrypted)).then(signature => {
+                        Identity.signWithKey(identity['wallet']['prv'], JSON.stringify(toBroadcastEncrypted)).then(async signature => {
                             signature['message'] = JSON.stringify(toBroadcastEncrypted)
                             signature['type'] = 'private'
                             Messages.broadcast('message', signature)
                             res.send(signature)
+
+                            let encryptedSelf = await Encryption.encryptMessage(receiver+'*|*|*'+message, identity['rsa']['pub'])
+                            var toBroadcastEncryptedSelf = {
+                                message: encryptedSelf,
+                                timestamp: timestamp
+                            }
+                            Identity.signWithKey(identity['wallet']['prv'], JSON.stringify(toBroadcastEncryptedSelf)).then(signatureSelf => {
+                                signatureSelf['message'] = JSON.stringify(toBroadcastEncryptedSelf)
+                                signatureSelf['type'] = 'private'
+                                Messages.broadcast('message', signatureSelf)
+                            })
                         })
                     } else {
                         res.send({

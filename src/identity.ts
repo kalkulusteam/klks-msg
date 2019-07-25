@@ -1,3 +1,5 @@
+import Utilities from "./utilities";
+
 var CoinKey = require('coinkey')
 const CryptoJS = require('crypto-js')
 const secp256k1 = require('secp256k1')
@@ -32,8 +34,9 @@ export default class Identity {
         return new Promise(async response => {
             var db = new PouchDB('users')
             let dbcheck = await db.allDocs()
+            identity._id = identity.address
             if (dbcheck.rows.length === 0) {
-                await db.post(identity)
+                await db.put(identity)
                 console.log('Saved new public key from ' + identity.address + '.')
             } else {
                 var found = false
@@ -45,8 +48,12 @@ export default class Identity {
                     }
                 }
                 if (found === false) {
-                    await db.post(identity)
-                    console.log('Saved new public key from ' + identity.address + '.')
+                    try{
+                    await db.put(identity)
+                        Utilities.log('Saved new public key from ' + identity.address + '.')
+                    }catch(e){
+                        Utilities.log('Identity for '+identity.address+' exsists yet')
+                    }
                 }
                 response(true)
             }

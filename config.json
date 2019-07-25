@@ -1,5 +1,5 @@
 {
-    "DEBUG": false,
+    "DEBUG": true,
     "P2P_PORT": 55576,
     "API_PORT": 11673,
     "BOOTSTRAP_NODES": [

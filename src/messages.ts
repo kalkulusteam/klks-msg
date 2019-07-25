@@ -28,10 +28,11 @@ export default class Messages {
             received.received_at = n
             received.timestamp = d.getTime()
             received.type = type
+            received._id = received.signature
 
             if(dbcheck.rows.length === 0){
-                Utilities.log('Saving new message to local database...')
-                await db.post(received)
+                Utilities.log('Saved new message with signature ' + received.signature + '.')
+                await db.put(received)
             }else{
                 var found = false
                 for(var i = 0; i < dbcheck.rows.length; i++){
@@ -42,8 +43,12 @@ export default class Messages {
                     }
                 }
                 if(found === false){
-                    await db.post(received)
-                    Utilities.log('Saved new message.')
+                    try{
+                        await db.put(received)
+                        Utilities.log('Saved new message with signature ' + received.signature + '.')
+                    }catch(e){
+                        Utilities.log('Message with signature ' + received.signature + ' exsists yet.')
+                    }
                 }else{
                     Utilities.log('Message '+ message.signature +' is stored yet')
                 }
