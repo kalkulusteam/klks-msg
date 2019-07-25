@@ -60,6 +60,25 @@ export default class Identity {
         })
     }
 
+    static async contacts(){
+        return new Promise(async response => {
+            let contacts = {}
+            var db = new PouchDB('users')
+            let dbcheck = await db.allDocs()
+            for (var i = 0; i < dbcheck.rows.length; i++) {
+                var check = dbcheck.rows[i]
+                var id = await db.get(check.id)
+                if (id.nickname === undefined) {
+                    let nickname = id.address.substr(0, 4) + '.' + id.address.substr(-4)
+                    id.nickname = nickname
+                }
+                contacts[id.address] = id.nickname
+            }
+            contacts[global['identity']['wallet']['pub']] = 'Me'
+            response(contacts)
+        })
+    }
+
     static async find(address) {
         return new Promise(async response => {
             var db = new PouchDB('users')

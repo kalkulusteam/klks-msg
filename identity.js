@@ -72,6 +72,26 @@ class Identity {
             }));
         });
     }
+    static contacts() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((response) => __awaiter(this, void 0, void 0, function* () {
+                let contacts = {};
+                var db = new PouchDB('users');
+                let dbcheck = yield db.allDocs();
+                for (var i = 0; i < dbcheck.rows.length; i++) {
+                    var check = dbcheck.rows[i];
+                    var id = yield db.get(check.id);
+                    if (id.nickname === undefined) {
+                        let nickname = id.address.substr(0, 4) + '.' + id.address.substr(-4);
+                        id.nickname = nickname;
+                    }
+                    contacts[id.address] = id.nickname;
+                }
+                contacts[global['identity']['wallet']['pub']] = 'Me';
+                response(contacts);
+            }));
+        });
+    }
     static find(address) {
         return __awaiter(this, void 0, void 0, function* () {
             return new Promise((response) => __awaiter(this, void 0, void 0, function* () {

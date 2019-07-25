@@ -15,10 +15,10 @@ new Vue({
     mounted() {
         const app = this
         app.updateContacts()
-        app.getPublicChat()
+        app.loadDiscussion('public')
         app.getDiscussions()
         setInterval(function () {
-            app.getPublicChat()
+            app.loadDiscussion()
         }, 500)
     },
     methods: {
@@ -38,14 +38,35 @@ new Vue({
                 app.discussions = response.data
             })
         },
-        getPublicChat() {
+        loadDiscussion(what, id) {
             const app = this
-            axios.get('http://localhost:11673/messages/public').then(response => {
-                app.chat.discussion = response.data
-                setTimeout(function () {
-                    window.jQuery('#scroll').scrollTop(99999999999999999)
-                }, 10)
-            })
+            if(what === undefined){
+                what = app.chat.receiver
+                id = app.chat.address
+            }
+            if(what === 'public'){
+                app.chat.receiver = 'public'
+                app.chat.name = 'Public chat'
+                app.chat.address = ''
+                axios.get('http://localhost:11673/messages/public').then(response => {
+                    app.chat.discussion = response.data
+                    setTimeout(function () {
+                        window.jQuery('#scroll').scrollTop(99999999999999999)
+                    }, 10)
+                })
+            }else if(what === 'group'){
+                
+            } else {
+                app.chat.receiver = id
+                app.chat.name = id
+                app.chat.address = id
+                axios.get('http://localhost:11673/messages/address/' + id).then(response => {
+                    app.chat.discussion = response.data
+                    setTimeout(function () {
+                        window.jQuery('#scroll').scrollTop(99999999999999999)
+                    }, 10)
+                })
+            }
         },
         sendMessage() {
             const app = this

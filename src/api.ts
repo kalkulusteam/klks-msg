@@ -37,19 +37,7 @@ export default class Api {
 
         api.get('/discussions', async (req, res) => {
 
-            let contacts = {}
-            var db = new PouchDB('users')
-            let dbcheck = await db.allDocs()
-            for (var i = 0; i < dbcheck.rows.length; i++) {
-                var check = dbcheck.rows[i]
-                var id = await db.get(check.id)
-                if (id.nickname === undefined) {
-                    let nickname = id.address.substr(0, 4) + '.' + id.address.substr(-4)
-                    id.nickname = nickname
-                }
-                contacts[id.address] = id.nickname
-            }
-            contacts[global['identity']['wallet']['pub']] = 'Me'
+            let contacts = await Identity.contacts()
 
             var db = new PouchDB('messages')
             let dbstore = await db.allDocs()
@@ -62,7 +50,8 @@ export default class Api {
                 if (message.type === 'private') {
                     delete message._id
                     delete message._rev
-                    let decrypted = await Encryption.decryptMessage(message.message)
+                    let parsed = JSON.parse(message.message)
+                    let decrypted = await Encryption.decryptMessage(parsed.message)
                     message.message = decrypted
                     messages.push(message)
                 }
@@ -72,12 +61,20 @@ export default class Api {
             });
             for (var k in messages) {
                 var message = messages[k]
-                if (ids.indexOf(message.address) === -1) {
-                    ids.push(message.address)
+                let user
+                let checkreceiver = message.message.toString().split('*|*|*')
+                if(checkreceiver[1] === undefined){
+                    user = message.address
+                }else{
+                    user = checkreceiver[0]
+                }
+
+                if (ids.indexOf(user) === -1) {
+                    ids.push(user)
                     var d = new Date(message.timestamp)
                     discussions.push({
-                        address: message.address,
-                        nickname: contacts[message.address],
+                        address: user,
+                        nickname: contacts[user],
                         last_message: d.toLocaleString()
                     })
                 }
@@ -87,20 +84,7 @@ export default class Api {
 
         api.get('/messages/public', async (req, res) => {
 
-            let contacts = {}
-            var db = new PouchDB('users')
-            let dbcheck = await db.allDocs()
-            for (var i = 0; i < dbcheck.rows.length; i++) {
-                var check = dbcheck.rows[i]
-                var id = await db.get(check.id)
-                if (id.nickname === undefined) {
-                    let nickname = id.address.substr(0, 4) + '.' + id.address.substr(-4)
-                    id.nickname = nickname
-                }
-                contacts[id.address] = id.nickname
-            }
-            contacts[global['identity']['wallet']['pub']] = 'Me'
-
+            let contacts = await Identity.contacts()
             var db = new PouchDB('messages')
             let dbstore = await db.allDocs()
             var signatures = []
@@ -133,6 +117,7 @@ export default class Api {
             var db = new PouchDB('messages')
             let dbstore = await db.allDocs()
             var messages = []
+            let contacts = await Identity.contacts()
             for (var i = 0; i < dbstore.rows.length; i++) {
                 var check = dbstore.rows[i]
                 var message = await db.get(check.id)
@@ -143,12 +128,20 @@ export default class Api {
                     let parsed = JSON.parse(message.message)
                     let decrypted = await Encryption.decryptMessage(parsed.message)
                     let checkreceiver = decrypted.toString().split('*|*|*')
+                    if (message.address === global['identity']['wallet']['pub']) {
+                        message.is_mine = true
+                    } else {
+                        message.is_mine = false
+                    }
+                    message.nickname = contacts[message.address]
                     if(checkreceiver[1] === undefined){
-                        message.message = decrypted
+                        parsed.message = decrypted
+                        message.message = parsed
                         messages.push(message)
                     }else{
                         if(checkreceiver[0] === req.params.address){
-                            message.message = checkreceiver[1]
+                            parsed.message = checkreceiver[1]
+                            message.message = parsed
                             messages.push(message)
                         }
                     }
@@ -243,7 +236,7 @@ export default class Api {
                     let nickname = id.address.substr(0, 4) + '.' + id.address.substr(-4)
                     id.nickname = nickname
                 }
-                if(identities.indexOf(id.address) === -1){
+                if(identities.indexOf(id.address) === -1 && id.address !== global['identity']['wallet']['pub']){
                     identities.push(id.address)
                     contacts.push(id)
                 }

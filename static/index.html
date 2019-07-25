@@ -45,25 +45,25 @@
 								<hr>
 								<ul class="nav discussions" role="tablist">
 									<li>
-										<a href="#chat1" class="filter direct active" data-chat="open" data-toggle="tab" role="tab" aria-controls="chat1" aria-selected="true">
-											<div class="status online"><img src="http://localhost:11673/avatar/KLKSMSGPUBLICCHAT" alt="avatar"><i data-eva="radio-button-on"></i></div>
+										<a href="#chat1" v-on:click="loadDiscussion('public')" class="filter direct active" data-chat="open" data-toggle="tab" role="tab" aria-controls="chat1" aria-selected="true">
+											<div class="status"><img src="http://localhost:11673/avatar/KLKSMSGPUBLICCHAT" alt="avatar"></div>
 											<div class="content">
 												<div class="headline">
-													<h5>Public chat</h5>
-													<span>Today</span>
+													<h5 style="margin-top:5px">Public chat</h5>
 												</div>
-												<p>Join the public unencrypted chat.</p>
 											</div>
 										</a>
 									</li>
 									<li v-for="discussion in discussions">
-										<a href="#chat1" class="filter direct" data-chat="open" data-toggle="tab" role="tab" aria-controls="chat1" aria-selected="true">
-											<div class="status online"><img src="http://localhost:11673/avatar/KiWYvE9ebmRsfxaxU3wn1QetRgyVZzWRAP" alt="avatar"><i data-eva="radio-button-on"></i></div>
+										<a href="#chat1" v-on:click="loadDiscussion('address',discussion.address)" class="filter direct" data-chat="open" data-toggle="tab" role="tab" aria-controls="chat1" aria-selected="true">
+											<div class="status">
+												<img :src="'http://localhost:11673/avatar/' + discussion.address" alt="avatar">
+											</div>
 											<div class="content">
 												<div class="headline">
-													<h5>{{ discussion.nickname }}</h5>
-													<span>{{ discussion.last_message }}</span>
+													<h5 style="margin-bottom:-17px">{{ discussion.nickname }}</h5>
 												</div>
+												<p>{{ discussion.last_message }}</p>
 											</div>
 										</a>
 									</li>
@@ -84,9 +84,9 @@
 								<hr>
 								<ul class="users">
 									<li v-for="user in users">
-										<a href="#">
+										<a href="#" v-on:click="loadDiscussion('address',user.address)">
 											<div class="status">
-												<img :src="'http://localhost:11673/avatar/' + user.address" alt="avatar"><i data-eva="radio-button-on"></i>
+												<img :src="'http://localhost:11673/avatar/' + user.address" alt="avatar">
 											</div>
 											<div class="content">
 												<h5>{{ user.nickname }}</h5>
@@ -205,15 +205,18 @@
 											<img :src="chat.avatar" alt="avatar">
 											<div class="content">
 												<h5>{{ chat.name }}</h5>
-												<span>Online</span>
+												<span>{{ chat.address }}</span>
 											</div>
 										</div>
 										<ul>
 											<li>
+												
 												<button type="button" class="btn" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><i data-eva="more-vertical" data-eva-animation="pulse"></i></button>
 												<div class="dropdown-menu">
 													<!--<button type="button" class="dropdown-item" data-toggle="modal" data-target="#compose"><i data-eva="person-add"></i>Add people</button>-->
 													<button type="button" class="dropdown-item" data-utility="open"><i data-eva="info"></i>Informations</button>
+													<button type="button" class="dropdown-item" data-utility="open"><i data-eva="archive-outline"></i>Delete chat</button>
+													<button type="button" class="dropdown-item" data-utility="open"><i data-eva="minus-circle-outline"></i>Block user</button>
 												</div>
 											</li>
 										</ul>
@@ -248,12 +251,13 @@
 							<!-- Start of Utility -->
 							<div class="utility">
 								<div class="container">
+									<button type="button" class="close" data-utility="open"><i data-eva="close"></i></button>
 									<div class="tab-content">
 										<div class="tab-pane active show" id="users" role="tabpanel">
 											<h4>Connection info</h4>
 											<hr>
-											<p>
-												Informations regarding this communcation.
+											<p style="margin-top:15px;">
+												Informations regarding this communcation. 
 											</p>
 										</div>
 									</div>
