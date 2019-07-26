@@ -252,7 +252,7 @@
 											<p style="margin-top:15px;">
 												<strong>Address:</strong><br>{{ chat.info.address }} ({{ chat.info.balance }} KLKS)<br>
 												<strong>State:</strong><br>
-												<span v-if="chat.info.blocked">Blocked</span><span v-if="!chat.info.blocked">Unblocked</span>
+												<span v-if="chat.info.blocked">Blocked</span><span v-if="!chat.info.blocked">Unblocked</span><br>
 												<strong>Local alias:</strong><br>
 												<input type="text" v-model="alias" class="form-control" placeholder="Give an alias to the user"><br>
 												<button v-on:click="updateAlias()" type="submit" class="btn primary">Update</button>

@@ -9,7 +9,9 @@
     "dev:server": "tsc -w & nodemon app.js --server",
     "start": "electron .",
     "engine": "node app.js --server",
-    "package": "rm -rf build && mkdir build && electron-packager . KalkulusMSG --out=build --overwrite"
+    "package:linux": "rm -rf build/KalkulusMSG-linux64 && electron-packager . KalkulusMSG --out=build --overwrite",
+    "package:win": "electron-packager . KalkulusMSG --out=build --platform=win32 --arch=x64 --overwrite",
+    "package:mac": "electron-packager . KalkulusMSG --out=build --platform=darwin --arch=x64 --overwrite"
   },
   "author": "Kalkulus Team",
   "license": "MIT",

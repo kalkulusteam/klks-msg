@@ -27,11 +27,13 @@ export default class Api {
         }
 
         //CHECK FOR LOG FILE TOO BIG
-        const stats = fs.statSync("./log");
-        const fileSizeInBytes = stats.size;
-        const fileSizeInMegabytes = fileSizeInBytes / 1000000.0;
-        if(fileSizeInMegabytes > 25){
-            fs.unlinkSync('./log')
+        if (fs.existsSync("./log")) {
+            const stats = fs.statSync("./log");
+            const fileSizeInBytes = stats.size;
+            const fileSizeInMegabytes = fileSizeInBytes / 1000000.0;
+            if(fileSizeInMegabytes > 25){
+                fs.unlinkSync('./log')
+            }
         }
 
         let apiport = await getPort({ port: config.API_PORT })
